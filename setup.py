@@ -15,7 +15,9 @@ setup(
     download_url="https://github.com/ruslux/validate_it/archive/{}.tar.gz".format(version),
     keywords=["schema", "validator", "json"],
     classifiers=[],
-    install_requires=[],
+    install_requires=[
+        'attrs (==17.4.0)'
+    ],
     extras_require={
         'tests': [
             'pytest (==3.4.0)',
