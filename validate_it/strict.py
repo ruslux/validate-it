@@ -240,7 +240,7 @@ class ListField(StrictType):
             if not _errors:
                 return _is_valid, _error, value
 
-        return False, ', '.join(_errors), value
+        return False, _errors, value
 
 
 @attr.s
@@ -313,7 +313,7 @@ class TupleField(StrictType):
             if not _errors:
                 return True, {}, tuple(_value)
 
-        return False, ', '.join(_errors), value
+        return False, _errors, value
 
 
 @attr.s
@@ -354,11 +354,11 @@ class DictField(StrictType):
         return _data
 
     def validate_type(self, value, convert, strip_unknown):
-        _errors = []
+        _errors = {}
         _is_valid, _error, value = super().validate_type(value, convert, strip_unknown)
 
         if _error:
-            _errors.append(_error)
+            _errors[self._field_name] = _error
 
         if _is_valid and value is not None:
             for _key, _value in value.items():
@@ -366,14 +366,11 @@ class DictField(StrictType):
                 _item_is_valid, _item_error, _value = self._children_field.is_valid(_value, convert, strip_unknown)
 
                 if not _item_is_valid:
-                    _errors.append(_item_error)
+                    _errors[_key] = _item_error
                 else:
                     value[_key] = _value
 
-            if not _errors:
-                return _is_valid, _error, value
-
-        return False, ', '.join(_errors), value
+        return not bool(_errors), _errors, value
 
 
 @attr.s
