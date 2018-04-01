@@ -1,0 +1,13 @@
+language: python
+python:
+  - "3.6"
+addons:
+install:
+  - pip install --upgrade setuptools pytest pytest-cov coveralls
+  - pip install -r requirements.txt
+before_script:
+  - ./show_versions.sh
+script:
+  - ./run_tests.sh
+after_success:
+  - coveralls

@@ -1,0 +1,13 @@
+.pytest_cache/
+venv/
+env/
+.idea/
+__pycache__/
+*.pyc
+MANIFEST
+dist/
+.coverage
+.cache/
+docs/build/*
+!docs/build/.keep
+validate_it.egg-info
