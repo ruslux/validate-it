@@ -173,7 +173,7 @@ class FieldTestCase(TestCase):
 
     def test_not_required(self):
         _is_valid, _error, _data = StrictType(field_name='StrictType').is_valid(None, False, False)
-        self.assertEqual({}, _error)
+        self.assertEqual('', _error)
         self.assertEqual(True, _is_valid)
 
     def test_required_right(self):

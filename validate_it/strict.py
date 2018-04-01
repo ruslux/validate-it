@@ -59,25 +59,25 @@ class StrictType(Validator):
             else:
                 value = self._default
 
-        return True, {}, value
+        return True, '', value
 
     def validate_required(self, value, convert, strip_unknown):
         if self._required and value is None:
-            return False, {self._field_name: "Value is required"}, value
+            return False, "Value is required", value
 
-        return True, {}, value
+        return True, '', value
 
     def validate_type(self, value, convert, strip_unknown):
         if not isinstance(value, self._type) and convert:
             value = self.convert(value)
 
         if isinstance(value, self._type):
-            return True, {}, value
+            return True, '', value
 
-        return False, {self._field_name: "Wrong type"}, value
+        return False, "Wrong type", value
 
     def validate_only(self, value, convert, strip_unknown):
-        return validate_belonging(value, self._field_name, self._only)
+        return validate_belonging(value, self._only)
 
     def validate_other(self, value, convert, strip_unknown):
         return True, {}, value
@@ -115,9 +115,7 @@ class __Number(StrictType):
         return _data
 
     def validate_other(self, value, convert, strip_unknown):
-        return validate_amount(
-            value, self._field_name, self._min_value, self._max_value
-        )
+        return validate_amount(value, self._min_value, self._max_value)
 
 
 @attr.s
@@ -167,13 +165,58 @@ class StrField(StrictType):
         return _data
 
     def validate_other(self, value, convert, strip_unknown):
-        return validate_length(
-            value, self._field_name, self._min_length, self._max_length
-        )
+        return validate_length(value, self._min_length, self._max_length)
 
 
 @attr.s
-class ListField(StrictType):
+class __Iterable(StrictType):
+    _min_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
+    _max_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
+    _children_field = attr.ib(default=None, validator=[is_none_or_instance_of(Validator)])
+
+    def representation(self):
+        _data = super().representation()
+
+        if self._max_length:
+            _data['max_length'] = self._max_length
+
+        if self._min_length:
+            _data['min_length'] = self._min_length
+
+        if self._children_field:
+            _data['children_field'] = self._children_field.representation()
+
+        return _data
+
+    def validate_length(self, value, convert, strip_unknown):
+        return validate_length(value, self._min_length, self._max_length)
+
+    def validate_items(self, value, convert, strip_unknown):
+        _errors = []
+
+        if value:
+            for _index, _item in enumerate(value):
+                self._children_field._field_name = self._field_name
+                _item_is_valid, _item_error, _item = self._children_field.is_valid(_item, convert, strip_unknown)
+
+                if not _item_is_valid:
+                    _errors.append(_item_error)
+                else:
+                    value[_index] = _item
+
+        return not bool(_errors), _errors, value
+
+    def validate_other(self, value, convert, strip_unknown):
+        _is_valid, _error, value = self.validate_length(value, convert, strip_unknown)
+
+        if _is_valid:
+            _is_valid, _error, value = self.validate_length(value, convert, strip_unknown)
+
+        return _is_valid, _error, value
+
+
+@attr.s
+class ListField(__Iterable):
     """
     Поле для значений типа ``list``, который хранит в себе значения типа указанного в ``children_type``
 
@@ -197,54 +240,10 @@ class ListField(StrictType):
 
     _type = list
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(list)])
-    _min_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
-    _max_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
-    _children_field = attr.ib(default=None, validator=[is_none_or_instance_of(Validator)])
-
-    def representation(self):
-        _data = super().representation()
-
-        if self._max_length:
-            _data['max_length'] = self._max_length
-
-        if self._min_length:
-            _data['min_length'] = self._min_length
-
-        if self._children_field:
-            _data['children_field'] = self._children_field.representation()
-
-        return _data
-
-    def validate_other(self, value, convert, strip_unknown):
-        return validate_length(
-            value, self._field_name, self._min_length, self._max_length
-        )
-
-    def validate_type(self, value, convert, strip_unknown):
-        _errors = []
-        _is_valid, _error, value = super().validate_type(value, convert, strip_unknown)
-
-        if _error:
-            _errors.append(_error)
-
-        if _is_valid and value is not None:
-            for _index, _item in enumerate(value):
-                self._children_field._field_name = self._field_name
-                _item_is_valid, _item_error, _item = self._children_field.is_valid(_item, convert, strip_unknown)
-
-                if not _item_is_valid:
-                    _errors.append(_item_error)
-                else:
-                    value[_index] = _item
-
-            if not _errors:
-                return _is_valid, _error, value
-
-        return False, _errors, value
 
 
 @attr.s
-class TupleField(StrictType):
+class TupleField(__Iterable):
     """
     Поле для значений типа ``tuple``, который хранит в себе значения, которые строго соответсвуют порядку полей,
     указанных в ``fields``.
@@ -290,31 +289,6 @@ class TupleField(StrictType):
 
         return _data
 
-    def validate_type(self, value, convert, strip_unknown):
-        _errors = []
-        _is_valid, _error, value = super().validate_type(value, convert, strip_unknown)
-
-        if _error:
-            _errors.append(_error)
-
-        if _is_valid and value is not None:
-            _value = list(value)
-
-            for _index, _field in enumerate(self._elements):
-                _item = _value[_index]
-                _field._field_name = self._field_name
-                _item_is_valid, _item_error, _item = _field.is_valid(_item, convert, strip_unknown)
-
-                if not _item_is_valid:
-                    _errors.append(_item_error)
-                else:
-                    _value[_index] = _item
-
-            if not _errors:
-                return True, {}, tuple(_value)
-
-        return False, _errors, value
-
 
 @attr.s
 class DictField(StrictType):
@@ -353,14 +327,10 @@ class DictField(StrictType):
 
         return _data
 
-    def validate_type(self, value, convert, strip_unknown):
+    def validate_other(self, value, convert, strip_unknown):
         _errors = {}
-        _is_valid, _error, value = super().validate_type(value, convert, strip_unknown)
 
-        if _error:
-            _errors[self._field_name] = _error
-
-        if _is_valid and value is not None:
+        if value:
             for _key, _value in value.items():
                 self._children_field._field_name = self._field_name
                 _item_is_valid, _item_error, _value = self._children_field.is_valid(_value, convert, strip_unknown)
