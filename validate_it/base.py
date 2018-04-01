@@ -12,12 +12,17 @@ class Validator:
         self._field_name = name
 
     def __new__(cls, *args, **kwargs):
-        if cls.__name__ not in cls._singletons:
+        _name = cls.get_singleton_name(*args, **kwargs)
+
+        if _name not in cls._singletons:
             _instance = object.__new__(cls)
             _instance.__init__(*args, **kwargs)
-            cls._singletons[cls.__name__] = _instance
+            cls._singletons[_name] = _instance
+        return cls._singletons[_name]
 
-        return cls._singletons[cls.__name__]
+    @classmethod
+    def get_singleton_name(cls, *args, **kwargs):
+        return cls.__name__ + str(kwargs)
 
     def representation(self):
         raise NotImplementedError()

@@ -383,20 +383,9 @@ class Schema(StrictType):
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(dict)])
     _required = attr.ib(default=True, validator=[attr.validators.instance_of(bool)])
 
-    def __new__(cls, *args, **kwargs):
-        _name = cls.get_singleton_name()
-
-        if _name not in cls._singletons:
-            _instance = object.__new__(cls)
-            _instance.__init__(*args, **kwargs)
-            cls._singletons[_name] = _instance
-
-        return cls._singletons[_name]
-
     @classmethod
-    def get_singleton_name(cls):
-        _fields = cls.get_fields()
-        return cls.__name__ + '_' + str(_fields)
+    def get_singleton_name(cls, *args, **kwargs):
+        return cls.__name__ + '_' + str(cls.get_fields()) + '_' + str(kwargs)
 
     def representation(self):
         return {x: y.representation() for x, y in self.get_fields().items()}
@@ -405,7 +394,8 @@ class Schema(StrictType):
     def get_fields(cls):
         return {k: v for k, v in cls.__dict__.items() if isinstance(v, Validator)}
 
-    def only_fields(self, *args: typing.List[str]):
+    @classmethod
+    def only_fields(cls, *args: typing.List[str]):
         """
         Создает копию схемы, в которую включены только поля перечисленные в ``*args``
 
@@ -413,23 +403,23 @@ class Schema(StrictType):
         :return: cls
         """
         _new = {}
-        _copy = deepcopy(self.get_fields())
+        _copy = deepcopy(cls.get_fields())
 
         for name in args:
             if name in _copy.keys():
                 _new[name] = _copy[name]
 
-        _new_cls = type(self.__class__.__name__, self.__class__.__bases__, _new)
-        return _new_cls(required=self._required, default=self._default, only=self._only)
+        return type(cls.__name__, cls.__bases__, _new)
 
-    def exclude_fields(self, *args: typing.List[str]):
+    @classmethod
+    def exclude_fields(cls, *args: typing.List[str]):
         """
         Создает копию схемы без полей перечисленных в ``*args``
 
         :param args: List[str]
         :return: cls
         """
-        _new = deepcopy(self.get_fields())
+        _new = deepcopy(cls.get_fields())
 
         for key in args:
             try:
@@ -437,8 +427,7 @@ class Schema(StrictType):
             except KeyError:
                 pass
 
-        _new_cls = type(self.__class__.__name__, self.__class__.__bases__, _new)
-        return _new_cls(required=self._required, default=self._default, only=self._only)
+        return type(cls.__name__, cls.__bases__, _new)
 
     def validate_other(self, value, convert=False, strip_unknown=False):
         _is_valid = True
