@@ -1,5 +1,5 @@
 from distutils.core import setup
-version = "0.1.0"
+version = "0.1.1"
 
 setup(
     name="validate-it",
@@ -15,6 +15,7 @@ setup(
     download_url="https://github.com/ruslux/validate_it/archive/{}.tar.gz".format(version),
     keywords=["schema", "validator", "json"],
     classifiers=[],
+    python_requires='>3.6.0',
     install_requires=[
         'attrs (==17.4.0)'
     ],

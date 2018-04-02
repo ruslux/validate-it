@@ -15,6 +15,7 @@ class StrictType(Validator):
     _required = attr.ib(default=False, validator=[attr.validators.instance_of(bool)])
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(object)])
     _only = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(collections.Iterable)])
+    _validators = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(collections.Iterable)])
 
     def representation(self):
         _data = {
@@ -50,6 +51,9 @@ class StrictType(Validator):
         if _is_valid and value is not None:
             _is_valid, _error, value = self.validate_other(value, convert, strip_unknown)
 
+        if _is_valid and value is not None:
+            _is_valid, _error, value = self.apply_validators(value, convert, strip_unknown)
+
         return _is_valid, _error, value
 
     def set_defaults(self, value, convert, strip_unknown):
@@ -81,6 +85,15 @@ class StrictType(Validator):
 
     def validate_other(self, value, convert, strip_unknown):
         return True, {}, value
+
+    def apply_validators(self, value, convert, strip_unknown):
+        for validator in self._validators:
+            _is_valid, _error, value = validator(value, convert, strip_unknown)
+
+            if not _is_valid:
+                return _is_valid, _error, value
+
+        return True, '', value
 
     def convert(self, value):
         try:
@@ -278,9 +291,10 @@ class TupleField(StrictType):
                 raise TypeError(f"`elements` element must be `field.Validator` instance")
 
     def representation(self):
-        return {
-            'types': [_field.representation() for _field in self._elements]
-        }
+        _data = super().representation()
+        _data['elements'] = [_field.representation() for _field in self._elements]
+
+        return _data
 
     def validate_length(self, value, convert, strip_unknown):
         if len(value) == len(self._elements):
@@ -412,7 +426,9 @@ class Schema(StrictType):
         return cls.__name__ + '_' + str(cls.get_fields()) + '_' + str(kwargs)
 
     def representation(self):
-        return {x: y.representation() for x, y in self.get_fields().items()}
+        _data = super().representation()
+        _data['schema'] = {x: y.representation() for x, y in self.get_fields().items()}
+        return _data
 
     @classmethod
     def get_fields(cls):

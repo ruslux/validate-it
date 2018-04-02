@@ -27,7 +27,7 @@ class UnionType(Validator):
     )
 
     def representation(self):
-        return [x.representation() for x in self._alternatives]
+        return {'one of': [x.representation() for x in self._alternatives]}
 
     def is_valid(self, value, convert=False, strip_unknown=False) -> Tuple[bool, dict, dict]:
         _errors = {}
