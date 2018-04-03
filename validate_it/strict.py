@@ -12,6 +12,7 @@ from validate_it.utils import is_none_or_instance_of, validate_belonging, valida
 @attr.s
 class StrictType(Validator):
     _type = object
+    _description = attr.ib(default='', validator=[attr.validators.instance_of(str)])
     _required = attr.ib(default=False, validator=[attr.validators.instance_of(bool)])
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(object)])
     _only = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(collections.Iterable)])
@@ -22,6 +23,9 @@ class StrictType(Validator):
             'type': self._type.__name__,
             'required': self._required
         }
+
+        if self._description:
+            _data['description'] = self._description
 
         if self._only:
             _data['only'] = self._only
