@@ -442,12 +442,7 @@ class Schema(StrictType):
         :param args: List[str]
         :return: cls
         """
-        _new = {}
-        _copy = deepcopy(cls.get_fields())
-
-        for name in args:
-            if name in _copy.keys():
-                _new[name] = _copy[name]
+        _new = {k: v for k, v in cls.get_fields().items() if k in args}
 
         return type(cls.__name__, cls.__bases__, _new)
 
@@ -459,13 +454,7 @@ class Schema(StrictType):
         :param args: List[str]
         :return: cls
         """
-        _new = deepcopy(cls.get_fields())
-
-        for key in args:
-            try:
-                del _new[key]
-            except KeyError:
-                pass
+        _new = {k: v for k, v in cls.get_fields().items() if k not in args}
 
         return type(cls.__name__, cls.__bases__, _new)
 
