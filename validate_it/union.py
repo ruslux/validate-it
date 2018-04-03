@@ -6,7 +6,7 @@ from validate_it.base import Validator
 from validate_it.utils import list_of, not_empty
 
 
-@attr.s
+@attr.s(slots=True)
 class UnionType(Validator):
     """
     Схема для которой можно задать несколько допустимых типов.

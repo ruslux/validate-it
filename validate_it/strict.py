@@ -9,7 +9,7 @@ from validate_it.base import Validator
 from validate_it.utils import is_none_or_instance_of, validate_belonging, validate_length, validate_amount
 
 
-@attr.s
+@attr.s(slots=True)
 class StrictType(Validator):
     _type = object
     _description = attr.ib(default='', validator=[attr.validators.instance_of(str)])
@@ -108,7 +108,7 @@ class StrictType(Validator):
         return value
 
 
-@attr.s
+@attr.s(slots=True)
 class BoolField(StrictType):
     """
     Поле для значений типа ``bool``
@@ -118,7 +118,7 @@ class BoolField(StrictType):
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(bool)])
 
 
-@attr.s
+@attr.s(slots=True)
 class __Number(StrictType):
     def representation(self):
         _data = super().representation()
@@ -135,7 +135,7 @@ class __Number(StrictType):
         return validate_amount(value, self._min_value, self._max_value)
 
 
-@attr.s
+@attr.s(slots=True)
 class IntField(__Number):
     """
     Поле для значений типа ``int``
@@ -147,7 +147,7 @@ class IntField(__Number):
     _max_value = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
 
 
-@attr.s
+@attr.s(slots=True)
 class FloatField(__Number):
     """
     Поле для значений типа ``float``
@@ -159,7 +159,7 @@ class FloatField(__Number):
     _max_value = attr.ib(default=None, validator=[is_none_or_instance_of(float)])
 
 
-@attr.s
+@attr.s(slots=True)
 class StrField(StrictType):
     """
     Поле для значений типа ``str``
@@ -185,7 +185,7 @@ class StrField(StrictType):
         return validate_length(value, self._min_length, self._max_length)
 
 
-@attr.s
+@attr.s(slots=True)
 class ListField(StrictType):
     """
     Поле для значений типа ``list``, который хранит в себе значения типа указанного в ``children_type``
@@ -254,7 +254,7 @@ class ListField(StrictType):
         return _data
 
 
-@attr.s
+@attr.s(slots=True)
 class TupleField(StrictType):
     """
     Поле для значений типа ``tuple``, который хранит в себе значения, которые строго соответсвуют порядку полей,
@@ -332,7 +332,7 @@ class TupleField(StrictType):
         return _is_valid, _error, value
 
 
-@attr.s
+@attr.s(slots=True)
 class DictField(StrictType):
     """
     Поле для значений типа ``dict``, который хранит в себе значения типа указанного в ``children_type``.
@@ -385,7 +385,7 @@ class DictField(StrictType):
         return not bool(_errors), _errors, value
 
 
-@attr.s
+@attr.s(slots=True)
 class DatetimeField(StrictType):
     """
     Поле для значений типа ``datetime``
@@ -395,7 +395,7 @@ class DatetimeField(StrictType):
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(datetime)])
 
 
-@attr.s
+@attr.s(slots=True)
 class Schema(StrictType):
     """
     Наряду с ``AnySchema`` класс ``Schema`` является основным инструментом для валидации документов.

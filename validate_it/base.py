@@ -3,7 +3,7 @@ from typing import Tuple, Any
 import attr
 
 
-@attr.s
+@attr.s(slots=True)
 class Validator:
     _singletons = {}
     _field_name = attr.ib(default=None, type=str)
