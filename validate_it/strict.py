@@ -37,7 +37,7 @@ class StrictType(Validator):
 
         for _validator in self._validators:
             for _item in self._only:
-                _is_valid, _error, _value = _validator(_item, False, False)
+                _validate_it, _error, _value = _validator(_item, False, False)
                 if _error:
                     raise ValueError(
                         f"Field {self._field_name} improperly configured: `only` value {_item} does not pass defined "
@@ -76,7 +76,7 @@ class StrictType(Validator):
 
         return _data
 
-    def is_valid(self, value, convert=False, strip_unknown=False) -> typing.Tuple[typing.Any, typing.Any]:
+    def validate_it(self, value, convert=False, strip_unknown=False) -> typing.Tuple[typing.Any, typing.Any]:
         _error, value = self.set_defaults(value, convert, strip_unknown)
 
         if not _error:
@@ -238,8 +238,8 @@ class ListField(StrictType):
         # prices for different user categories:
         _data = [140.0, 138.0, 130.0]
 
-        _is_valid, _error, _value = Good().is_valid(_data)
-        assert _is_valid
+        _errors, _value = Good().validate_it(_data)
+        assert not _errors
 
     """
 
@@ -257,7 +257,7 @@ class ListField(StrictType):
 
         if value:
             for _index, _item in enumerate(value):
-                _item_error, _item = self._children_field.is_valid(_item, convert, strip_unknown)
+                _item_error, _item = self._children_field.validate_it(_item, convert, strip_unknown)
 
                 if _item_error:
                     _errors[_index] = _item_error
@@ -312,8 +312,8 @@ class TupleField(StrictType):
             'message': '{"authorized": true}'
         }
 
-        _is_valid, _error, _value = Log().is_valid(_data)
-        assert _is_valid
+        _errors, _value = Log().validate_it(_data)
+        assert not _errors
 
     """
 
@@ -349,7 +349,7 @@ class TupleField(StrictType):
         if value:
             for _index, _field in enumerate(self._elements):
                 _item = value[_index]
-                _item_error, _item = _field.is_valid(_item, convert, strip_unknown)
+                _item_error, _item = _field.validate_it(_item, convert, strip_unknown)
 
                 if _item_error:
                     _errors[_index] = _item_error
@@ -387,8 +387,8 @@ class DictField(StrictType):
             'int': 2.7
         }
 
-        _is_valid, _error, _value = Character().is_valid(_data)
-        assert _is_valid
+        _errors, _value = Character().validate_it(_data)
+        assert not _errors
 
     """
 
@@ -410,7 +410,7 @@ class DictField(StrictType):
         if value:
             for _key, _value in value.items():
                 self._children_field._field_name = self._field_name
-                _item_error, _value = self._children_field.is_valid(_value, convert, strip_unknown)
+                _item_error, _value = self._children_field.validate_it(_value, convert, strip_unknown)
 
                 if _item_error:
                     _errors[_key] = _item_error
@@ -450,8 +450,8 @@ class Schema(StrictType):
 
         _document = {'username': 'Mark Lutz', 'password': 'AwEsOmEpAsSwOrDhAsH', 'books': '14'}
 
-        _is_valid, _error, _document = User().is_valid(_document, convert=True, strip_unknown=False)
-        assert _is_valid
+        _errors, _document = User().validate_it(_document, convert=True, strip_unknown=False)
+        assert not _errors
 
     Все доступные поля описаны в модуле ``validation.field`` и несколько полей в ``api.field``
     """
@@ -505,7 +505,7 @@ class Schema(StrictType):
         _copy = {}
 
         for _name, _field in self.get_fields().items():
-            _error, _value = _field.is_valid(value.get(_name), convert, strip_unknown)
+            _error, _value = _field.validate_it(value.get(_name), convert, strip_unknown)
 
             if _error:
                 _errors[_name] = _error

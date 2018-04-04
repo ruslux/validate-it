@@ -13,7 +13,7 @@ def is_email(value, convert, strip_unknown):
 
 class TestValidators(TestCase):
     def test_validators(self):
-        _error, _value = StrField(required=True, validators=[is_email]).is_valid("notEmail")
+        _error, _value = StrField(required=True, validators=[is_email]).validate_it("notEmail")
 
         assert _error
         self.assertEquals("Invalid email", _error)

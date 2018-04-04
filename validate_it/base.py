@@ -27,7 +27,7 @@ class Validator:
     def representation(self):
         raise NotImplementedError()
 
-    def is_valid(self, value, convert=False, strip_unknown=False) -> Tuple[Any, Any]:
+    def validate_it(self, value, convert=False, strip_unknown=False) -> Tuple[Any, Any]:
         raise NotImplementedError
 
 

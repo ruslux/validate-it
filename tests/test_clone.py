@@ -23,22 +23,22 @@ class TestClone(TestCase):
             'b': 2
         }
 
-        _error, _validated = First().is_valid(_data)
+        _error, _validated = First().validate_it(_data)
 
         assert not _error
         self.assertEquals(_data, _validated)
 
-        _error, _validated = Second().is_valid(_data, strip_unknown=True)
+        _error, _validated = Second().validate_it(_data, strip_unknown=True)
 
         assert not _error
         self.assertEquals({'a': 1}, _validated)
 
-        _error, _validated = Third().is_valid(_data, strip_unknown=True)
+        _error, _validated = Third().validate_it(_data, strip_unknown=True)
 
         assert not _error
         self.assertEquals({'b': 2}, _validated)
 
-        _error, _validated = Fourth().is_valid(_data, convert=True, strip_unknown=True)
+        _error, _validated = Fourth().validate_it(_data, convert=True, strip_unknown=True)
 
         assert not _error
         self.assertEquals({'a': '1'}, _validated)

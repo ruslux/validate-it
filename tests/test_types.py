@@ -167,56 +167,56 @@ class FieldTestCase(TestCase):
             _expected_list = CONVERT['expected'][_field]
             for _index, _expected in enumerate(_expected_list):
                 _value = CONVERT['wrong'][_field][_index]
-                _error, _data = _field(field_name=_field).is_valid(_value, True, False)
+                _error, _data = _field(field_name=_field).validate_it(_value, True, False)
                 self.assertEqual(_expected, _data)
 
     def test_not_required(self):
-        _error, _data = StrictType(field_name='StrictType').is_valid(None, False, False)
+        _error, _data = StrictType(field_name='StrictType').validate_it(None, False, False)
         assert not _error
 
     def test_required_right(self):
-        _error, _data = StrictType(field_name='StrictType', required=True).is_valid(1, False, False)
+        _error, _data = StrictType(field_name='StrictType', required=True).validate_it(1, False, False)
         assert not _error
 
     def test_required_wrong(self):
-        _error, _data = StrictType(field_name='StrictType', required=True).is_valid(None, False, False)
+        _error, _data = StrictType(field_name='StrictType', required=True).validate_it(None, False, False)
         assert _error
 
     def test_default_value_required(self):
-        _error, _data = StrictType(field_name='StrictType', required=True, default=1).is_valid(None, False, False)
+        _error, _data = StrictType(field_name='StrictType', required=True, default=1).validate_it(None, False, False)
         assert not _error
         self.assertEqual(1, _data)
 
     def test_default_value_not_required(self):
-        _error, _data = StrictType(field_name='StrictType', default=1).is_valid(None, False, False)
+        _error, _data = StrictType(field_name='StrictType', default=1).validate_it(None, False, False)
         assert not _error
         self.assertEqual(1, _data)
 
     def test_default_callable_required(self):
         for _field in SIMPLE_FIELDS:
             _default = REQUIRED['callable'][_field]
-            _error, _data = _field(field_name=_field, required=True, default=_default).is_valid(None, False, False)
+            _error, _data = _field(field_name=_field, required=True, default=_default).validate_it(None, False, False)
             assert not _error
             self.assertEqual(_default(), _data)
 
         _default = REQUIRED['callable'][Schema]
         _error, _data = SimpleSchema(
             field_name=Schema, required=True, default=_default
-        ).is_valid(None, False, False)
+        ).validate_it(None, False, False)
         assert not _error
         self.assertEqual(_default(), _data)
 
     def test_default_callable_not_required(self):
         for _field in SIMPLE_FIELDS:
             _default = REQUIRED['callable'][_field]
-            _error, _data = _field(field_name=_field, default=_default).is_valid(None, False, False)
+            _error, _data = _field(field_name=_field, default=_default).validate_it(None, False, False)
             assert not _error
             self.assertEqual(_default(), _data)
 
         _default = REQUIRED['callable'][Schema]
         _error, _data = SimpleSchema(
             field_name=Schema, default=_default
-        ).is_valid(None, False, False)
+        ).validate_it(None, False, False)
         assert not _error
         self.assertEqual(_default(), _data)
 
@@ -225,7 +225,7 @@ class FieldTestCase(TestCase):
             _value = AMOUNT_VALUE[_field]
             _min = AMOUNT_RIGHT['min'][_field]
 
-            _error, _data = _field(field_name=_field, min_value=_min).is_valid(_value, False, False)
+            _error, _data = _field(field_name=_field, min_value=_min).validate_it(_value, False, False)
             assert not _error
             self.assertEqual(_value, _data)
 
@@ -234,7 +234,7 @@ class FieldTestCase(TestCase):
             _value = AMOUNT_VALUE[_field]
             _max = AMOUNT_RIGHT['max'][_field]
 
-            _error, _data = _field(field_name=_field, max_value=_max).is_valid(_value, False, False)
+            _error, _data = _field(field_name=_field, max_value=_max).validate_it(_value, False, False)
             assert not _error
             self.assertEqual(_value, _data)
 
@@ -244,7 +244,7 @@ class FieldTestCase(TestCase):
             _min = AMOUNT_RIGHT['min'][_field]
             _max = AMOUNT_RIGHT['max'][_field]
 
-            _error, _data = _field(field_name=_field, min_value=_min, max_value=_max).is_valid(_value, False, False)
+            _error, _data = _field(field_name=_field, min_value=_min, max_value=_max).validate_it(_value, False, False)
             assert not _error
             self.assertEqual(_value, _data)
 
@@ -253,7 +253,7 @@ class FieldTestCase(TestCase):
             _value = AMOUNT_VALUE[_field]
             _min = AMOUNT_WRONG['min'][_field]
 
-            _error, _data = _field(field_name=_field, min_value=_min).is_valid(_value, False, False)
+            _error, _data = _field(field_name=_field, min_value=_min).validate_it(_value, False, False)
             assert _error
             self.assertEqual(_value, _data)
 
@@ -262,7 +262,7 @@ class FieldTestCase(TestCase):
             _value = AMOUNT_VALUE[_field]
             _max = AMOUNT_WRONG['max'][_field]
 
-            _error, _data = _field(field_name=_field, max_value=_max).is_valid(_value, False, False)
+            _error, _data = _field(field_name=_field, max_value=_max).validate_it(_value, False, False)
             assert _error
             self.assertEqual(_value, _data)
 
@@ -272,7 +272,7 @@ class FieldTestCase(TestCase):
             _min = AMOUNT_WRONG['min'][_field]
             _max = AMOUNT_WRONG['max'][_field]
 
-            _error, _data = _field(field_name=_field, min_value=_min, max_value=_max).is_valid(_value, False, False)
+            _error, _data = _field(field_name=_field, min_value=_min, max_value=_max).validate_it(_value, False, False)
             assert _error
             self.assertEqual(_value, _data)
 
@@ -283,7 +283,7 @@ class FieldTestCase(TestCase):
 
         _error, _data = ListField(
             field_name='ListField', min_length=_min, children_field=AnyType()
-        ).is_valid(_value, False, False)
+        ).validate_it(_value, False, False)
         assert not _error
         self.assertEqual(_value, _data)
 
@@ -293,7 +293,7 @@ class FieldTestCase(TestCase):
 
         _error, _data = StrField(
             field_name='StrField', min_length=_min
-        ).is_valid(_value, False, False)
+        ).validate_it(_value, False, False)
         assert not _error
         self.assertEqual(_value, _data)
 
@@ -304,7 +304,7 @@ class FieldTestCase(TestCase):
 
         _error, _data = ListField(
             field_name='ListField', max_length=_max, children_field=AnyType()
-        ).is_valid(_value, False, False)
+        ).validate_it(_value, False, False)
         assert not _error
         self.assertEqual(_value, _data)
 
@@ -314,7 +314,7 @@ class FieldTestCase(TestCase):
 
         _error, _data = StrField(
             field_name='StrField', max_length=_max
-        ).is_valid(_value, False, False)
+        ).validate_it(_value, False, False)
         assert not _error
         self.assertEqual(_value, _data)
 
@@ -326,7 +326,7 @@ class FieldTestCase(TestCase):
 
         _error, _data = ListField(
             field_name='ListField', min_length=_min, max_length=_max, children_field=AnyType()
-        ).is_valid(_value, False, False)
+        ).validate_it(_value, False, False)
         assert not _error
         self.assertEqual(_value, _data)
 
@@ -337,7 +337,7 @@ class FieldTestCase(TestCase):
 
         _error, _data = StrField(
             field_name='StrField', min_length=_min, max_length=_max
-        ).is_valid(_value, False, False)
+        ).validate_it(_value, False, False)
         assert not _error
         self.assertEqual(_value, _data)
 
@@ -348,7 +348,7 @@ class FieldTestCase(TestCase):
 
         _error, _data = ListField(
             field_name='ListField', min_length=_min, children_field=AnyType()
-        ).is_valid(_value, False, False)
+        ).validate_it(_value, False, False)
         assert _error
         self.assertEqual(_value, _data)
 
@@ -358,7 +358,7 @@ class FieldTestCase(TestCase):
 
         _error, _data = StrField(
             field_name='StrField', min_length=_min
-        ).is_valid(_value, False, False)
+        ).validate_it(_value, False, False)
         assert _error
         self.assertEqual(_value, _data)
 
@@ -369,7 +369,7 @@ class FieldTestCase(TestCase):
 
         _error, _data = ListField(
             field_name='ListField', max_length=_max, children_field=AnyType()
-        ).is_valid(_value, False, False)
+        ).validate_it(_value, False, False)
         assert _error
         self.assertEqual(_value, _data)
 
@@ -379,7 +379,7 @@ class FieldTestCase(TestCase):
 
         _error, _data = StrField(
             field_name='StrField', max_length=_max
-        ).is_valid(_value, False, False)
+        ).validate_it(_value, False, False)
         assert _error
         self.assertEqual(_value, _data)
 
@@ -391,7 +391,7 @@ class FieldTestCase(TestCase):
 
         _error, _data = ListField(
             field_name='ListField', min_length=_min, max_length=_max, children_field=AnyType()
-        ).is_valid(_value, False, False)
+        ).validate_it(_value, False, False)
         assert _error
         self.assertEqual(_value, _data)
 
@@ -402,7 +402,7 @@ class FieldTestCase(TestCase):
 
         _error, _data = StrField(
             field_name='StrField', min_length=_min, max_length=_max
-        ).is_valid(_value, False, False)
+        ).validate_it(_value, False, False)
         assert _error
         self.assertEqual(_value, _data)
 
@@ -410,7 +410,7 @@ class FieldTestCase(TestCase):
         for _field in SIMPLE_FIELDS:
             _value = ONLY['value'][_field]
             _only = ONLY['right'][_field]
-            _error, _data = _field(field_name=_field, required=True, only=_only).is_valid(_value, False, False)
+            _error, _data = _field(field_name=_field, required=True, only=_only).validate_it(_value, False, False)
 
             assert not _error
 
@@ -419,7 +419,7 @@ class FieldTestCase(TestCase):
             _only = ONLY['right'][_field]
             _error, _data = _field(
                 field_name=_field, required=True, only=_only, children_field=AnyType()
-            ).is_valid(_value, False, False)
+            ).validate_it(_value, False, False)
 
             self.assertEqual(_value, _data)
             assert not _error
@@ -428,7 +428,7 @@ class FieldTestCase(TestCase):
         _only = ONLY['right'][Schema]
         _error, _data = AnyType(
             field_name=Schema, required=True, only=_only
-        ).is_valid(_value, False, False)
+        ).validate_it(_value, False, False)
         assert not _error
 
     def test_only_wrong(self):
@@ -437,7 +437,7 @@ class FieldTestCase(TestCase):
             _only = ONLY['wrong'][_field]
             _error, _data = _field(
                 field_name=_field, required=True, only=_only
-            ).is_valid(_value, False, False)
+            ).validate_it(_value, False, False)
 
             assert _error
 
@@ -446,7 +446,7 @@ class FieldTestCase(TestCase):
             _only = ONLY['wrong'][_field]
             _error, _data = _field(
                 field_name=_field, required=True, only=_only, children_field=AnyType()
-            ).is_valid(_value, False, False)
+            ).validate_it(_value, False, False)
 
             assert _error
 
@@ -454,7 +454,7 @@ class FieldTestCase(TestCase):
         _only = ONLY['wrong'][Schema]
         _error, _data = SimpleSchema(
             field_name=Schema, required=True, only=_only
-        ).is_valid(_value, False, False)
+        ).validate_it(_value, False, False)
 
         assert _error
 
@@ -470,7 +470,7 @@ class UnionTestCase(TestCase):
             FloatField()
         ])
 
-        _error, _value = _field.is_valid(0.1, False, False)
+        _error, _value = _field.validate_it(0.1, False, False)
         assert not _error
 
     def test_wrong_alternatives(self):
@@ -479,7 +479,7 @@ class UnionTestCase(TestCase):
             FloatField()
         ])
 
-        _error, _value = _field.is_valid('0.1', False, False)
+        _error, _value = _field.validate_it('0.1', False, False)
         assert _error
         self.assertEqual('0.1', _value)
 
@@ -491,7 +491,7 @@ class SchemaTestCase(TestCase):
             b = IntField()
 
         _value = {'a': 1, 'b': 1, 'c': 1}
-        _error, value = Original().is_valid(_value, strip_unknown=True)
+        _error, value = Original().validate_it(_value, strip_unknown=True)
         assert not _error
         self.assertEqual({'a': 1, 'b': 1}, value)
 
@@ -501,7 +501,7 @@ class SchemaTestCase(TestCase):
             b = IntField()
 
         _value = {'a': 1, 'b': 1, 'c': 1}
-        _error, value = Original().is_valid(_value)
+        _error, value = Original().validate_it(_value)
         assert _error
         self.assertEqual(_value, value)
 
