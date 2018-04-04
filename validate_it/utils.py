@@ -12,7 +12,7 @@ class NullableValidator(object):
 
         if not isinstance(value, self._type) and value is not None and not inspect.isfunction(value):
             raise TypeError(
-                f"'{attribute.name}' must be {self._base_type} or None (got {value} that is a {value.__class__})."
+                f"'{attribute.name}' must be {self._type} or None (got {value} that is a {value.__class__})."
             )
 
 
