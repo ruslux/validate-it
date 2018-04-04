@@ -1,6 +1,5 @@
-import typing
 import collections
-from copy import deepcopy
+import typing
 from datetime import datetime
 
 import attr
@@ -17,6 +16,34 @@ class StrictType(Validator):
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(object)])
     _only = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(collections.Iterable)])
     _validators = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(collections.Iterable)])
+
+    def __attrs_post_init__(self):
+        if self._only and self._default is not None:
+            if callable(self._default):
+                raise TypeError(
+                    f"Field {self._field_name} improperly configured: `default` parameter does not allow `callable` "
+                    f"when `only` defined"
+                )
+            if self._default not in self._only:
+                raise ValueError(
+                    f"Field {self._field_name} improperly configured: `default` parameter not in `only` "
+                )
+
+        for _validator in self._validators:
+            for _item in self._only:
+                _is_valid, _error, _value = _validator(_item, False, False)
+                if _error:
+                    raise ValueError(
+                        f"Field {self._field_name} improperly configured: `only` value {_item} does not pass defined "
+                        f"`validator` {_validator}"
+                    )
+
+            if self._default is not None:
+                _default = self._default() if callable(self._default) else self._default
+                raise ValueError(
+                    f"Field {self._field_name} improperly configured: `default` value {_default} does not pass defined "
+                    f"`validator` {_validator}"
+                )
 
     def representation(self):
         _data = {
