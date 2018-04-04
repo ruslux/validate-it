@@ -1,4 +1,5 @@
 import inspect
+import typing
 
 import attr
 
@@ -62,32 +63,32 @@ def one_of(_list):
     return _OneOfValidator(_list)
 
 
-def validate_amount(value, min_value, max_value):
+def validate_amount(value, min_value, max_value) -> typing.Tuple[typing.Union[typing.Any, str], typing.Any]:
     if min_value is not None:
         if value < min_value:
-            return False, f"Value must be greater than `{min_value}`", value
+            return f"Value must be greater than `{min_value}`", value
 
     if max_value is not None:
         if value > max_value:
-            return False, f"Value must be lesser than `{max_value}`", value
+            return f"Value must be lesser than `{max_value}`", value
 
-    return True, {}, value
+    return {}, value
 
 
-def validate_length(value, min_length, max_length):
+def validate_length(value, min_length, max_length) -> typing.Tuple[typing.Union[typing.Any, str], typing.Any]:
     if min_length is not None:
         if len(value) < min_length:
-            return False, f"Value length must be greater than `{min_length}`", value
+            return f"Value length must be greater than `{min_length}`", value
 
     if max_length is not None:
         if len(value) > max_length:
-            return False, f"[Value length must be lesser than `{max_length}`", value
+            return f"[Value length must be lesser than `{max_length}`", value
 
-    return True, {}, value
+    return {}, value
 
 
-def validate_belonging(value, only):
+def validate_belonging(value, only) -> typing.Tuple[str, typing.Any]:
     if only and value not in only:
-        return False, f"Value must belong to `{only}`", value
+        return f"Value must belong to `{only}`", value
     else:
-        return True, "", value
+        return "", value

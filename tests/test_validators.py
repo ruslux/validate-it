@@ -6,14 +6,14 @@ from validate_it import StrField
 
 def is_email(value, convert, strip_unknown):
     if not re.match(r"[^@]+@[^@]+\.[^@]+", value):
-        return False, "Invalid email", value
+        return "Invalid email", value
 
-    return True, '', value
+    return '', value
 
 
 class TestValidators(TestCase):
     def test_validators(self):
-        _is_valid, _error, _value = StrField(required=True, validators=[is_email]).is_valid("notEmail")
+        _error, _value = StrField(required=True, validators=[is_email]).is_valid("notEmail")
 
-        self.assertEquals(False, _is_valid)
+        assert _error
         self.assertEquals("Invalid email", _error)

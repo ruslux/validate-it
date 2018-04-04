@@ -29,18 +29,18 @@ class UnionType(Validator):
     def representation(self):
         return {'one of': [x.representation() for x in self._alternatives]}
 
-    def is_valid(self, value, convert=False, strip_unknown=False) -> Tuple[bool, dict, dict]:
+    def is_valid(self, value, convert=False, strip_unknown=False) -> Tuple[dict, dict]:
         _errors = {}
 
         for _alternative in self._alternatives:
-            _is_valid, _error, _value = _alternative.is_valid(value, convert, strip_unknown)
+            _error, _value = _alternative.is_valid(value, convert, strip_unknown)
 
-            if _is_valid:
-                return _is_valid, _error, _value
+            if not _error:
+                return _error, _value
             else:
                 _errors[_alternative.__class__.__name__] = _error
 
-        return False, _errors, value
+        return _errors, value
 
 
 __all__ = [

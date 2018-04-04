@@ -23,26 +23,22 @@ class TestClone(TestCase):
             'b': 2
         }
 
-        _is_valid, _error, _validated = First().is_valid(_data)
+        _error, _validated = First().is_valid(_data)
 
-        self.assertEquals(True, _is_valid)
-        self.assertEquals(False, bool(_error))
+        assert not _error
         self.assertEquals(_data, _validated)
 
-        _is_valid, _error, _validated = Second().is_valid(_data, strip_unknown=True)
+        _error, _validated = Second().is_valid(_data, strip_unknown=True)
 
-        self.assertEquals(True, _is_valid)
-        self.assertEquals(False, bool(_error))
+        assert not _error
         self.assertEquals({'a': 1}, _validated)
 
-        _is_valid, _error, _validated = Third().is_valid(_data, strip_unknown=True)
+        _error, _validated = Third().is_valid(_data, strip_unknown=True)
 
-        self.assertEquals(True, _is_valid)
-        self.assertEquals(False, bool(_error))
+        assert not _error
         self.assertEquals({'b': 2}, _validated)
 
-        _is_valid, _error, _validated = Fourth().is_valid(_data, convert=True, strip_unknown=True)
+        _error, _validated = Fourth().is_valid(_data, convert=True, strip_unknown=True)
 
-        self.assertEquals(True, _is_valid)
-        self.assertEquals(False, bool(_error))
+        assert not _error
         self.assertEquals({'a': '1'}, _validated)
