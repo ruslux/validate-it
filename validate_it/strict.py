@@ -10,12 +10,18 @@ from validate_it.utils import is_none_or_instance_of, validate_belonging, valida
 
 @attr.s(slots=True)
 class StrictType(Validator):
-    _type = object
+    _base_type = object
     _description = attr.ib(default='', validator=[attr.validators.instance_of(str)])
     _required = attr.ib(default=False, validator=[attr.validators.instance_of(bool)])
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(object)])
     _only = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(collections.Iterable)])
     _validators = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(collections.Iterable)])
+
+    @property
+    def extended_type(self):
+        if self.__class__.__name__.lower() == self._base_type.__name__ + 'field':
+            return None
+        return self.__class__.__name__
 
     def __attrs_post_init__(self):
         if self._only and self._default is not None:
@@ -47,9 +53,12 @@ class StrictType(Validator):
 
     def representation(self):
         _data = {
-            'type': self._type.__name__,
+            'base_type': self._base_type.__name__,
             'required': self._required
         }
+
+        if self.extended_type:
+            _data['extended_type'] = self.extended_type
 
         if self._description:
             _data['description'] = self._description
@@ -103,10 +112,10 @@ class StrictType(Validator):
         return True, '', value
 
     def validate_type(self, value, convert, strip_unknown):
-        if not isinstance(value, self._type) and convert:
+        if not isinstance(value, self._base_type) and convert:
             value = self.convert(value)
 
-        if isinstance(value, self._type):
+        if isinstance(value, self._base_type):
             return True, '', value
 
         return False, "Wrong type", value
@@ -128,7 +137,7 @@ class StrictType(Validator):
 
     def convert(self, value):
         try:
-            value = self._type(value)
+            value = self._base_type(value)
         except Exception:
             pass
 
@@ -141,7 +150,7 @@ class BoolField(StrictType):
     Поле для значений типа ``bool``
     """
 
-    _type = bool
+    _base_type = bool
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(bool)])
 
 
@@ -168,7 +177,7 @@ class IntField(__Number):
     Поле для значений типа ``int``
     """
 
-    _type = int
+    _base_type = int
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
     _min_value = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
     _max_value = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
@@ -180,7 +189,7 @@ class FloatField(__Number):
     Поле для значений типа ``float``
     """
 
-    _type = float
+    _base_type = float
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(float)])
     _min_value = attr.ib(default=None, validator=[is_none_or_instance_of(float)])
     _max_value = attr.ib(default=None, validator=[is_none_or_instance_of(float)])
@@ -192,7 +201,7 @@ class StrField(StrictType):
     Поле для значений типа ``str``
     """
 
-    _type = str
+    _base_type = str
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(str)])
     _min_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
     _max_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
@@ -235,7 +244,7 @@ class ListField(StrictType):
 
     """
 
-    _type = list
+    _base_type = list
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(list)])
     _min_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
     _max_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
@@ -309,7 +318,7 @@ class TupleField(StrictType):
 
     """
 
-    _type = tuple
+    _base_type = tuple
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(tuple)])
     _elements = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(list)])
 
@@ -384,7 +393,7 @@ class DictField(StrictType):
 
     """
 
-    _type = dict
+    _base_type = dict
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(dict)])
     _children_field = attr.ib(default=None, validator=[is_none_or_instance_of(Validator)])
 
@@ -418,7 +427,7 @@ class DatetimeField(StrictType):
     Поле для значений типа ``datetime``
     """
 
-    _type = datetime
+    _base_type = datetime
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(datetime)])
 
 
@@ -447,7 +456,7 @@ class Schema(StrictType):
 
     Все доступные поля описаны в модуле ``validation.field`` и несколько полей в ``api.field``
     """
-    _type = dict
+    _base_type = dict
     _cached_fields = {}
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(dict)])
     _required = attr.ib(default=True, validator=[attr.validators.instance_of(bool)])

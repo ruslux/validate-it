@@ -8,7 +8,7 @@ class AnyType(StrictType):
     """
     Поле, для которого любое значение считается правильным.
     """
-    _type = object
+    _base_type = object
 
     def representation(self):
         return 'any type'
