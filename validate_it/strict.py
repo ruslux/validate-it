@@ -19,8 +19,6 @@ class StrictType(Validator):
 
     @property
     def extended_type(self):
-        if self.__class__.__name__.lower() == self._base_type.__name__ + 'field':
-            return None
         return self.__class__.__name__
 
     def __attrs_post_init__(self):
