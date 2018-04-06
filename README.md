@@ -57,7 +57,8 @@ _data = {
     "convert": 1 
 }
 
-_is_valid, _errors, _data = Car().is_valid(_data, convert=True, strip_unknown=True)
+_errors, _data = Car().validate_it(_data, convert=True, strip_unknown=True)
+assert not _errors
 ```
 
 ### <a name="requirements"/>Requirements</a>
