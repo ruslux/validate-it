@@ -286,6 +286,12 @@ class ListField(StrictType):
 
         return _data
 
+    def convert(self, value):
+        if not isinstance(value, collections.MutableSequence) and not isinstance(value, tuple):
+            value = [value]
+
+        return super().convert(value)
+
 
 @attr.s(slots=True)
 class TupleField(StrictType):
