@@ -3,517 +3,859 @@ from unittest import TestCase
 
 from validate_it import *
 
-SIMPLE_FIELDS = [BoolField, IntField, FloatField, StrField, DatetimeField]
-FIELDS_WITH_CHILDREN = [ListField, DictField]
-SCHEMA_FIELDS = [SchemaField]
-FIELDS_FIELDS = [TupleField]
 
-ALL_FIELDS = SIMPLE_FIELDS + FIELDS_WITH_CHILDREN + SCHEMA_FIELDS + FIELDS_FIELDS
+class BoolFieldTestCase(TestCase):
+    def test_required(self):
+        error, value = BoolField(required=True).validate_it(None)
+        assert error
 
-AMOUNT_FIELDS = [IntField, FloatField]
-LENGTH_FIELDS = [StrField, ListField]
+        error, value = BoolField(required=True).validate_it(False)
+        assert not error
 
+    def test_default_not_required(self):
+        error, value = BoolField(default=True).validate_it(None)
+        assert value
 
-class SimpleSchema(Schema):
-    field = IntField()
+        error, value = BoolField(default=False).validate_it(None)
+        assert not value
 
+        error, value = BoolField(default=True).validate_it(False)
+        assert not value
 
-_now = datetime.now()
-
-REQUIRED = {
-    'value': {
-        BoolField: True,
-        IntField: 0,
-        FloatField: 0.0,
-        StrField: '',
-        ListField: [1, 2, 3],
-        TupleField: (1, 2, 3),
-        DictField: {'field': 1},
-        SchemaField: {'field': 1},
-        DatetimeField: _now,
-    },
-    'callable': {
-        BoolField: lambda: True,
-        IntField: lambda: 0,
-        FloatField: lambda: 0.0,
-        StrField: lambda: '',
-        ListField: lambda: [1, 2, 3],
-        TupleField: lambda: (1, 2, 3),
-        DictField: lambda: {'field': 1},
-        SchemaField: lambda: {'field': 1},
-        DatetimeField: lambda: _now,
-    }
-}
-
-ONLY = {
-    'value': {
-        BoolField: True,
-        IntField: 0,
-        FloatField: 0.0,
-        StrField: 'yes',
-        ListField: [1, 2, 3],
-        TupleField: (1, 2, 3),
-        DictField: {'field': 1},
-        SchemaField: {'field': 1},
-        DatetimeField: _now,
-    },
-    'right': {
-        BoolField: [True, False],
-        IntField: [0, 1, 2],
-        FloatField: [0.0, 0.1, 0.2],
-        StrField: ['yes', 'no'],
-        ListField: [[1, 2, 3], [], [3, 2, 1]],
-        TupleField: [(1, 2, 3), (), (3, 2, 1)],
-        DictField: [{'field': 1}, {'field': 2}],
-        SchemaField: [{'field': 1}, {'field': 2}],
-        DatetimeField: [_now, datetime.now()],
-    },
-    'wrong': {
-        BoolField: [False],
-        IntField: [1, 2],
-        FloatField: [0.1, 0.2],
-        StrField: ['no'],
-        ListField: [[], [3, 2, 1]],
-        TupleField: [(), (3, 2, 1)],
-        DictField: [{'field': 2}],
-        SchemaField: [{'field': 2}],
-        DatetimeField: [datetime.now()],
-    }
-}
-
-AMOUNT_VALUE = {
-    IntField: 0,
-    FloatField: 0.0,
-}
-
-AMOUNT_RIGHT = {
-    'min': {
-        IntField: 0,
-        FloatField: 0.0,
-    },
-    'max': {
-        IntField: 0,
-        FloatField: 0.0,
-    }
-}
-
-AMOUNT_WRONG = {
-    'min': {
-        IntField: 1,
-        FloatField: 1.0,
-    },
-    'max': {
-        IntField: -1,
-        FloatField: -1.0,
-    }
-}
-
-LENGTH_VALUE = {
-    StrField: '12345',
-    ListField: [1, 2, 3, 4, 5]
-}
-
-LENGTH_RIGHT = {
-    'min': {
-        StrField: 5,
-        ListField: 5
-    },
-    'max': {
-        StrField: 5,
-        ListField: 5
-    }
-}
-
-LENGTH_WRONG = {
-    'min': {
-        StrField: 6,
-        ListField: 6
-    },
-    'max': {
-        StrField: 4,
-        ListField: 4
-    }
-}
-
-CONVERT = {
-    'wrong': {
-        BoolField: ['', 1, 0],
-        IntField: ['0', '1', 2.0],
-        FloatField: [0, '0.1'],
-        StrField: [1, 2.0],
-        ListField: [()],
-        TupleField: [[]],
-        DictField: [],
-        SchemaField: [],
-        DatetimeField: ['2018-01-30'],
-    },
-    'expected': {
-        BoolField: [False, True, False],
-        IntField: [0, 1, 2],
-        FloatField: [0.0, 0.1],
-        StrField: ['1', '2.0'],
-        ListField: [[]],
-        TupleField: [()],
-        DictField: [],
-        SchemaField: [],
-        DatetimeField: [],
-    }
-}
-
-
-class FieldTestCase(TestCase):
-    def test_convert(self):
-        for _field in SIMPLE_FIELDS:
-            _expected_list = CONVERT['expected'][_field]
-            for _index, _expected in enumerate(_expected_list):
-                _value = CONVERT['wrong'][_field][_index]
-                _error, _data = _field(field_name=_field).validate_it(_value, True, False)
-                self.assertEqual(_expected, _data)
-
-    def test_not_required(self):
-        _error, _data = StrictType(field_name='StrictType').validate_it(None, False, False)
-        assert not _error
-
-    def test_required_right(self):
-        _error, _data = StrictType(field_name='StrictType', required=True).validate_it(1, False, False)
-        assert not _error
-
-    def test_required_wrong(self):
-        _error, _data = StrictType(field_name='StrictType', required=True).validate_it(None, False, False)
-        assert _error
-
-    def test_default_value_required(self):
-        _error, _data = StrictType(field_name='StrictType', required=True, default=1).validate_it(None, False, False)
-        assert not _error
-        self.assertEqual(1, _data)
-
-    def test_default_value_not_required(self):
-        _error, _data = StrictType(field_name='StrictType', default=1).validate_it(None, False, False)
-        assert not _error
-        self.assertEqual(1, _data)
-
-    def test_default_callable_required(self):
-        for _field in SIMPLE_FIELDS:
-            _default = REQUIRED['callable'][_field]
-            _error, _data = _field(field_name=_field, required=True, default=_default).validate_it(None, False, False)
-            assert not _error
-            self.assertEqual(_default(), _data)
-
-        _default = REQUIRED['callable'][Schema]
-        _error, _data = SimpleSchema(
-            field_name=Schema, required=True, default=_default
-        ).validate_it(None, False, False)
-        assert not _error
-        self.assertEqual(_default(), _data)
+    def test_default_required(self):
+        error, value = BoolField(default=True, required=True).validate_it(None)
+        assert not error
 
     def test_default_callable_not_required(self):
-        for _field in SIMPLE_FIELDS:
-            _default = REQUIRED['callable'][_field]
-            _error, _data = _field(field_name=_field, default=_default).validate_it(None, False, False)
-            assert not _error
-            self.assertEqual(_default(), _data)
+        error, value = BoolField(default=lambda: True).validate_it(None)
+        assert value
 
-        _default = REQUIRED['callable'][Schema]
-        _error, _data = SimpleSchema(
-            field_name=Schema, default=_default
-        ).validate_it(None, False, False)
-        assert not _error
-        self.assertEqual(_default(), _data)
+        error, value = BoolField(default=lambda: False).validate_it(None)
+        assert not value
 
-    def test_amount_min_right(self):
-        for _field in AMOUNT_FIELDS:
-            _value = AMOUNT_VALUE[_field]
-            _min = AMOUNT_RIGHT['min'][_field]
+        error, value = BoolField(default=lambda: True).validate_it(False)
+        assert not value
 
-            _error, _data = _field(field_name=_field, min_value=_min).validate_it(_value, False, False)
-            assert not _error
-            self.assertEqual(_value, _data)
+    def test_default_callable_required(self):
+        error, value = BoolField(default=lambda: True, required=True).validate_it(None)
+        assert not error
 
-    def test_amount_max_right(self):
-        for _field in AMOUNT_FIELDS:
-            _value = AMOUNT_VALUE[_field]
-            _max = AMOUNT_RIGHT['max'][_field]
+    def test_wrong_type(self):
+        error, value = BoolField().validate_it(1)
+        assert error
 
-            _error, _data = _field(field_name=_field, max_value=_max).validate_it(_value, False, False)
-            assert not _error
-            self.assertEqual(_value, _data)
+    def test_only(self):
+        error, value = BoolField(only=[False]).validate_it(True)
+        assert error
 
-    def test_amount_both_right(self):
-        for _field in AMOUNT_FIELDS:
-            _value = AMOUNT_VALUE[_field]
-            _min = AMOUNT_RIGHT['min'][_field]
-            _max = AMOUNT_RIGHT['max'][_field]
+        error, value = BoolField(only=[True]).validate_it(True)
+        assert not error
 
-            _error, _data = _field(field_name=_field, min_value=_min, max_value=_max).validate_it(_value, False, False)
-            assert not _error
-            self.assertEqual(_value, _data)
+    def test_only_callable(self):
+        error, value = BoolField(only=lambda: [False]).validate_it(True)
+        assert error
 
-    def test_amount_min_wrong(self):
-        for _field in AMOUNT_FIELDS:
-            _value = AMOUNT_VALUE[_field]
-            _min = AMOUNT_WRONG['min'][_field]
+        error, value = BoolField(only=lambda: [True]).validate_it(True)
+        assert not error
 
-            _error, _data = _field(field_name=_field, min_value=_min).validate_it(_value, False, False)
-            assert _error
-            self.assertEqual(_value, _data)
+    def test_amount(self):
+        pass
 
-    def test_amount_max_wrong(self):
-        for _field in AMOUNT_FIELDS:
-            _value = AMOUNT_VALUE[_field]
-            _max = AMOUNT_WRONG['max'][_field]
+    def test_length(self):
+        pass
 
-            _error, _data = _field(field_name=_field, max_value=_max).validate_it(_value, False, False)
-            assert _error
-            self.assertEqual(_value, _data)
+    def test_strip_unknown(self):
+        pass
 
-    def test_amount_both_wrong(self):
-        for _field in AMOUNT_FIELDS:
-            _value = AMOUNT_VALUE[_field]
-            _min = AMOUNT_WRONG['min'][_field]
-            _max = AMOUNT_WRONG['max'][_field]
+    def test_convert(self):
+        error, value = BoolField().validate_it(1, convert=True)
+        assert not error
+        assert value is True
 
-            _error, _data = _field(field_name=_field, min_value=_min, max_value=_max).validate_it(_value, False, False)
-            assert _error
-            self.assertEqual(_value, _data)
 
-    def test_length_min_right(self):
-        # list
-        _value = LENGTH_VALUE[ListField]
-        _min = LENGTH_RIGHT['min'][ListField]
+class IntFieldTestCase(TestCase):
+    def test_required(self):
+        error, value = IntField(required=True).validate_it(None)
+        assert error
 
-        _error, _data = ListField(
-            field_name='ListField', min_length=_min, children_field=AnyType()
-        ).validate_it(_value, False, False)
-        assert not _error
-        self.assertEqual(_value, _data)
+        error, value = IntField(required=True).validate_it(10)
+        assert not error
 
-        # string
-        _value = LENGTH_VALUE[StrField]
-        _min = LENGTH_RIGHT['min'][StrField]
+    def test_default_not_required(self):
+        error, value = IntField(default=3).validate_it(None)
+        assert value is 3
 
-        _error, _data = StrField(
-            field_name='StrField', min_length=_min
-        ).validate_it(_value, False, False)
-        assert not _error
-        self.assertEqual(_value, _data)
+        error, value = IntField(default=0).validate_it(None)
+        assert value is 0
 
-    def test_length_max_right(self):
-        # list
-        _value = LENGTH_VALUE[ListField]
-        _max = LENGTH_RIGHT['max'][ListField]
+        error, value = IntField(default=3).validate_it(4)
+        assert value is 4
 
-        _error, _data = ListField(
-            field_name='ListField', max_length=_max, children_field=AnyType()
-        ).validate_it(_value, False, False)
-        assert not _error
-        self.assertEqual(_value, _data)
+    def test_default_required(self):
+        error, value = IntField(default=3, required=True).validate_it(None)
+        assert not error
 
-        # string
-        _value = LENGTH_VALUE[StrField]
-        _max = LENGTH_RIGHT['max'][StrField]
+    def test_default_callable_not_required(self):
+        error, value = IntField(default=lambda: 3).validate_it(None)
+        assert value is 3
 
-        _error, _data = StrField(
-            field_name='StrField', max_length=_max
-        ).validate_it(_value, False, False)
-        assert not _error
-        self.assertEqual(_value, _data)
+        error, value = IntField(default=lambda: 0).validate_it(None)
+        assert value is 0
 
-    def test_length_both_right(self):
-        # list
-        _value = LENGTH_VALUE[ListField]
-        _min = LENGTH_RIGHT['min'][ListField]
-        _max = LENGTH_RIGHT['max'][ListField]
+        error, value = IntField(default=lambda: 3).validate_it(4)
+        assert value is 4
 
-        _error, _data = ListField(
-            field_name='ListField', min_length=_min, max_length=_max, children_field=AnyType()
-        ).validate_it(_value, False, False)
-        assert not _error
-        self.assertEqual(_value, _data)
+    def test_default_callable_required(self):
+        error, value = IntField(default=lambda: 3, required=True).validate_it(None)
+        assert not error
+        assert value is 3
 
-        # string
-        _value = LENGTH_VALUE[StrField]
-        _min = LENGTH_RIGHT['min'][StrField]
-        _max = LENGTH_RIGHT['max'][StrField]
+    def test_wrong_type(self):
+        error, value = IntField().validate_it(1.0)
+        assert error
 
-        _error, _data = StrField(
-            field_name='StrField', min_length=_min, max_length=_max
-        ).validate_it(_value, False, False)
-        assert not _error
-        self.assertEqual(_value, _data)
+    def test_only(self):
+        error, value = IntField(only=[1, 2, 3]).validate_it(4)
+        assert error
 
-    def test_length_min_wrong(self):
-        # list
-        _value = LENGTH_VALUE[ListField]
-        _min = LENGTH_WRONG['min'][ListField]
+        error, value = IntField(only=[1, 2, 3]).validate_it(1)
+        assert not error
 
-        _error, _data = ListField(
-            field_name='ListField', min_length=_min, children_field=AnyType()
-        ).validate_it(_value, False, False)
-        assert _error
-        self.assertEqual(_value, _data)
+    def test_only_callable(self):
+        error, value = IntField(only=lambda: [1, 2, 3]).validate_it(4)
+        assert error
 
-        # string
-        _value = LENGTH_VALUE[StrField]
-        _min = LENGTH_WRONG['min'][StrField]
+        error, value = IntField(only=lambda: [1, 2, 3]).validate_it(1)
+        assert not error
 
-        _error, _data = StrField(
-            field_name='StrField', min_length=_min
-        ).validate_it(_value, False, False)
-        assert _error
-        self.assertEqual(_value, _data)
+    def test_amount(self):
+        error, value = IntField(min_value=3).validate_it(2)
+        assert error
 
-    def test_length_max_wrong(self):
-        # list
-        _value = LENGTH_VALUE[ListField]
-        _max = LENGTH_WRONG['max'][ListField]
+        error, value = IntField(min_value=3).validate_it(4)
+        assert not error
 
-        _error, _data = ListField(
-            field_name='ListField', max_length=_max, children_field=AnyType()
-        ).validate_it(_value, False, False)
-        assert _error
-        self.assertEqual(_value, _data)
+        error, value = IntField(max_value=3).validate_it(4)
+        assert error
 
-        # string
-        _value = LENGTH_VALUE[StrField]
-        _max = LENGTH_WRONG['max'][StrField]
+        error, value = IntField(max_value=3).validate_it(3)
+        assert not error
 
-        _error, _data = StrField(
-            field_name='StrField', max_length=_max
-        ).validate_it(_value, False, False)
-        assert _error
-        self.assertEqual(_value, _data)
+    def test_length(self):
+        pass
 
-    def test_length_both_wrong(self):
-        # list
-        _value = LENGTH_VALUE[ListField]
-        _min = LENGTH_WRONG['min'][ListField]
-        _max = LENGTH_WRONG['max'][ListField]
+    def test_strip_unknown(self):
+        pass
 
-        _error, _data = ListField(
-            field_name='ListField', min_length=_min, max_length=_max, children_field=AnyType()
-        ).validate_it(_value, False, False)
-        assert _error
-        self.assertEqual(_value, _data)
+    def test_convert(self):
+        error, value = IntField().validate_it(3.0, convert=True)
+        assert not error
+        assert value is 3
 
-        # string
-        _value = LENGTH_VALUE[StrField]
-        _min = LENGTH_WRONG['min'][StrField]
-        _max = LENGTH_WRONG['max'][StrField]
+        error, value = IntField().validate_it(True, convert=True)
+        assert not error
+        assert value is 1
 
-        _error, _data = StrField(
-            field_name='StrField', min_length=_min, max_length=_max
-        ).validate_it(_value, False, False)
-        assert _error
-        self.assertEqual(_value, _data)
+        error, value = IntField().validate_it('4', convert=True)
+        assert not error
+        assert value is 4
 
-    def test_only_right(self):
-        for _field in SIMPLE_FIELDS:
-            _value = ONLY['value'][_field]
-            _only = ONLY['right'][_field]
-            _error, _data = _field(field_name=_field, required=True, only=_only).validate_it(_value, False, False)
 
-            assert not _error
+class FloatFieldTestCase(TestCase):
+    def test_required(self):
+        error, value = FloatField(required=True).validate_it(None)
+        assert error
 
-        for _field in FIELDS_WITH_CHILDREN:
-            _value = ONLY['value'][_field]
-            _only = ONLY['right'][_field]
-            _error, _data = _field(
-                field_name=_field, required=True, only=_only, children_field=AnyType()
-            ).validate_it(_value, False, False)
+        error, value = FloatField(required=True).validate_it(10.0)
+        assert not error
 
-            self.assertEqual(_value, _data)
-            assert not _error
+    def test_default_not_required(self):
+        error, value = FloatField(default=3.0).validate_it(None)
+        assert value == 3.0
 
-        _value = ONLY['value'][Schema]
-        _only = ONLY['right'][Schema]
-        _error, _data = AnyType(
-            field_name=Schema, required=True, only=_only
-        ).validate_it(_value, False, False)
-        assert not _error
+        error, value = FloatField(default=0.0).validate_it(None)
+        assert value == 0.0
 
-    def test_only_wrong(self):
-        for _field in SIMPLE_FIELDS:
-            _value = ONLY['value'][_field]
-            _only = ONLY['wrong'][_field]
-            _error, _data = _field(
-                field_name=_field, required=True, only=_only
-            ).validate_it(_value, False, False)
+        error, value = FloatField(default=3.0).validate_it(4.0)
+        assert value == 4.0
 
-            assert _error
+    def test_default_required(self):
+        error, value = FloatField(default=3.0, required=True).validate_it(None)
+        assert not error
 
-        for _field in FIELDS_WITH_CHILDREN:
-            _value = ONLY['value'][_field]
-            _only = ONLY['wrong'][_field]
-            _error, _data = _field(
-                field_name=_field, required=True, only=_only, children_field=AnyType()
-            ).validate_it(_value, False, False)
+    def test_default_callable_not_required(self):
+        error, value = FloatField(default=lambda: 3.0).validate_it(None)
+        assert value == 3.0
 
-            assert _error
+        error, value = FloatField(default=lambda: 0.0).validate_it(None)
+        assert value == 0.0
 
-        _value = ONLY['value'][Schema]
-        _only = ONLY['wrong'][Schema]
-        _error, _data = SimpleSchema(
-            field_name=Schema, required=True, only=_only
-        ).validate_it(_value, False, False)
+        error, value = FloatField(default=lambda: 3.0).validate_it(4.0)
+        assert value == 4.0
 
-        assert _error
+    def test_default_callable_required(self):
+        error, value = FloatField(default=lambda: 3.0, required=True).validate_it(None)
+        assert not error
+        assert value == 3.0
+
+    def test_wrong_type(self):
+        error, value = FloatField().validate_it(1)
+        assert error
+
+    def test_only(self):
+        error, value = FloatField(only=[1.0, 2.0, 3.0]).validate_it(4.0)
+        assert error
+
+        error, value = FloatField(only=[1.0, 2.0, 3.0]).validate_it(1.0)
+        assert not error
+
+    def test_only_callable(self):
+        error, value = FloatField(only=lambda: [1.0, 2.0, 3.0]).validate_it(4.0)
+        assert error
+
+        error, value = FloatField(only=lambda: [1.0, 2.0, 3.0]).validate_it(1.0)
+        assert not error
+
+    def test_amount(self):
+        error, value = FloatField(min_value=3.0).validate_it(2.0)
+        assert error
+
+        error, value = FloatField(min_value=3.0).validate_it(4.0)
+        assert not error
+
+        error, value = FloatField(max_value=3.0).validate_it(4.0)
+        assert error
+
+        error, value = FloatField(max_value=3.0).validate_it(3.0)
+        assert not error
+
+    def test_length(self):
+        pass
+
+    def test_strip_unknown(self):
+        pass
+
+    def test_convert(self):
+        error, value = FloatField().validate_it(3, convert=True)
+        assert not error
+        assert value == 3.0
+
+        error, value = FloatField().validate_it(True, convert=True)
+        assert not error
+        assert value == 1.0
+
+        error, value = FloatField().validate_it('4.0', convert=True)
+        assert not error
+        assert value == 4.0
+
+
+class StrFieldTestCase(TestCase):
+    def test_required(self):
+        error, value = StrField(required=True).validate_it(None)
+        assert error
+
+        error, value = StrField(required=True).validate_it('')
+        assert not error
+
+    def test_default_not_required(self):
+        error, value = StrField(default='a').validate_it(None)
+        assert value == 'a'
+
+        error, value = StrField(default='').validate_it(None)
+        assert value == ''
+
+        error, value = StrField(default='a').validate_it('b')
+        assert value == 'b'
+
+    def test_default_required(self):
+        error, value = StrField(default='a', required=True).validate_it(None)
+        assert not error
+        assert value == 'a'
+
+    def test_default_callable_not_required(self):
+        error, value = StrField(default=lambda: 'a').validate_it(None)
+        assert value == 'a'
+
+        error, value = StrField(default=lambda: '').validate_it(None)
+        assert value == ''
+
+        error, value = StrField(default=lambda: 'a').validate_it('b')
+        assert value == 'b'
+
+    def test_default_callable_required(self):
+        error, value = StrField(default=lambda: 'a', required=True).validate_it(None)
+        assert not error
+        assert value == 'a'
+
+    def test_wrong_type(self):
+        error, value = StrField().validate_it(1)
+        assert error
+
+    def test_only(self):
+        error, value = StrField(only=['a', 'b', 'c']).validate_it('d')
+        assert error
+
+        error, value = StrField(only=['a', 'b', 'c']).validate_it('a')
+        assert not error
+
+    def test_only_callable(self):
+        error, value = StrField(only=lambda: ['a', 'b', 'c']).validate_it('d')
+        assert error
+
+        error, value = StrField(only=lambda: ['a', 'b', 'c']).validate_it('a')
+        assert not error
+
+    def test_amount(self):
+        pass
+
+    def test_length(self):
+        error, value = StrField(min_length=3).validate_it('a')
+        assert error
+
+        error, value = StrField(min_length=3).validate_it('abc')
+        assert not error
+
+        error, value = StrField(max_length=3).validate_it('abcd')
+        assert error
+
+        error, value = StrField(max_length=3).validate_it('abc')
+        assert not error
+
+    def test_strip_unknown(self):
+        pass
+
+    def test_convert(self):
+        error, value = StrField().validate_it(3.0, convert=True)
+        assert not error
+        assert value == '3.0'
+
+        error, value = StrField().validate_it(True, convert=True)
+        assert not error
+        assert value == 'True'
+
+        error, value = StrField().validate_it(4, convert=True)
+        assert not error
+        assert value == '4'
+
+
+class ListFieldTestCase(TestCase):
+    def test_required(self):
+        error, value = ListField(children_field=IntField(), required=True).validate_it(None)
+        assert error
+
+        error, value = ListField(children_field=IntField(), required=True).validate_it([])
+        assert not error
+
+    def test_default_not_required(self):
+        error, value = ListField(children_field=IntField(), default=[1]).validate_it(None)
+        assert value == [1]
+
+        error, value = ListField(children_field=IntField(), default=[]).validate_it(None)
+        assert value == []
+
+        error, value = ListField(children_field=IntField(), default=[1]).validate_it([2])
+        assert value == [2]
+
+    def test_default_required(self):
+        error, value = ListField(children_field=IntField(), default=[1], required=True).validate_it(None)
+        assert not error
+        assert value == [1]
+
+    def test_default_callable_not_required(self):
+        error, value = ListField(children_field=IntField(), default=lambda: [1]).validate_it(None)
+        assert value == [1]
+
+        error, value = ListField(children_field=IntField(), default=lambda: []).validate_it(None)
+        assert value == []
+
+        error, value = ListField(children_field=IntField(), default=lambda: [1]).validate_it([2])
+        assert value == [2]
+
+    def test_default_callable_required(self):
+        error, value = ListField(children_field=IntField(), default=lambda: [1], required=True).validate_it(None)
+        assert not error
+        assert value == [1]
+
+    def test_wrong_type(self):
+        error, value = ListField(children_field=IntField()).validate_it((1,))
+        assert error
+
+    def test_only(self):
+        error, value = ListField(children_field=IntField(), only=[[1], [2, 3], [3, 4]]).validate_it([4, 5])
+        assert error
+
+        error, value = ListField(children_field=IntField(), only=[[1], [2, 3], [3, 4]]).validate_it([3, 4])
+        assert not error
+
+    def test_only_callable(self):
+        error, value = ListField(children_field=IntField(), only=lambda: [[1], [2, 3], [3, 4]]).validate_it([4, 5])
+        assert error
+
+        error, value = ListField(children_field=IntField(), only=lambda: [[1], [2, 3], [3, 4]]).validate_it([3, 4])
+        assert not error
+
+    def test_amount(self):
+        pass
+
+    def test_length(self):
+        error, value = ListField(children_field=IntField(), min_length=3).validate_it([1])
+        assert error
+
+        error, value = ListField(children_field=IntField(), min_length=3).validate_it([1, 2, 3])
+        assert not error
+
+        error, value = ListField(children_field=IntField(), max_length=3).validate_it([1, 2, 3, 4])
+        assert error
+
+        error, value = ListField(children_field=IntField(), max_length=3).validate_it([1, 2, 3])
+        assert not error
+
+    def test_strip_unknown(self):
+        pass
+
+    def test_convert(self):
+        error, value = ListField(children_field=IntField()).validate_it((1, 2.0, '3'), convert=True)
+        assert not error
+        assert value == [1, 2, 3]
+
+        error, value = ListField(children_field=IntField()).validate_it(10, convert=True)
+        assert not error
+        assert value == [10]
+
+        error, value = ListField(children_field=StrField()).validate_it('abc', convert=True)
+        assert not error
+        assert value == ['abc']
+
+
+class TupleFieldTestCase(TestCase):
+    def test_required(self):
+        error, value = TupleField(elements=[IntField(), FloatField(), StrField()], required=True).validate_it(None)
+        assert error
+
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()], required=True
+        ).validate_it((1, 2.0, '3'))
+        assert not error
+
+    def test_default_not_required(self):
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()], default=(1, 2.0, '3.0')
+        ).validate_it(None)
+        assert value == (1, 2.0, '3.0')
+
+        error, value = TupleField(default=tuple()).validate_it(None)
+        assert value == tuple()
+
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()], default=(1, 2.0, '3')
+        ).validate_it((2, 3.0, '4.0'))
+        assert value == (2, 3.0, '4.0')
+
+    def test_default_required(self):
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()], default=(1, 2.0, '3'), required=True
+        ).validate_it(None)
+        assert not error
+        assert value == (1, 2.0, '3')
+
+    def test_default_callable_not_required(self):
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()], default=lambda: (1, 2.0, '3')
+        ).validate_it(None)
+        assert value == (1, 2.0, '3')
+
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()], default=lambda: tuple()
+        ).validate_it(None)
+        assert value == tuple()
+
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()], default=lambda: (1, 2.0, '3')
+        ).validate_it((2, 3.0, '4.0'))
+        assert value == (2, 3.0, '4.0')
+
+    def test_default_callable_required(self):
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()], default=lambda: (1, 2.0, '3'), required=True
+        ).validate_it(None)
+        assert not error
+        assert value == (1, 2.0, '3')
+
+    def test_wrong_type(self):
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()]
+        ).validate_it([1])
+        assert error
+
+    def test_only(self):
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()], only=[(1, 2.0, '3'), (2, 3.0, '4'), (3, 4.0, '5')]
+        ).validate_it((4, 5.0, '6'))
+        assert error
+
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()], only=[(1, 2.0, '3'), (2, 3.0, '4'), (3, 4.0, '5')]
+        ).validate_it((1, 2.0, '3'))
+        assert not error
+
+    def test_only_callable(self):
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()], only=lambda: [(1, 2.0, '3'), (2, 3.0, '4'), (3, 4.0, '5')]
+        ).validate_it((4, 5.0, '6'))
+        assert error
+
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()], only=lambda: [(1, 2.0, '3'), (2, 3.0, '4'), (3, 4.0, '5')]
+        ).validate_it((1, 2.0, '3'))
+        assert not error
+
+    def test_amount(self):
+        pass
+
+    def test_length(self):
+        error, value = TupleField(elements=[IntField(), FloatField(), StrField()]).validate_it((1, 2.0, '3'))
+        assert not error
+
+        error, value = TupleField(elements=[IntField(), FloatField(), StrField()]).validate_it((1, 2.0))
+        assert error
+
+        error, value = TupleField(elements=[IntField(), FloatField(), StrField()]).validate_it((1, 2.0, '3', []))
+        assert error
+
+    def test_strip_unknown(self):
+        pass
+
+    def test_convert(self):
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()]
+        ).validate_it([1, 2.0, '3'], convert=True)
+        assert not error
+        assert value == (1, 2.0, '3')
+
+        error, value = TupleField(
+            elements=[IntField(), FloatField(), StrField()]
+        ).validate_it([1, 2, 3], convert=True)
+        assert not error
+        assert value == (1, 2.0, '3')
+
+
+class DictFieldTestCase(TestCase):
+    _first = {
+        'a': 1,
+        'b': 2,
+        'c': 3
+    }
+
+    _as_first = {
+        'a': 1,
+        'b': 2,
+        'c': 3
+    }
+
+    _second = {
+        'a': 2,
+        'b': 3,
+        'c': 4
+    }
+
+    _as_second = {
+        'a': 2,
+        'b': 3,
+        'c': 4
+    }
+
+    _third = {
+        'a': 3,
+        'b': 4,
+        'c': 5
+    }
+
+    def test_required(self):
+        error, value = DictField(children_field=IntField(), required=True).validate_it(None)
+        assert error
+
+        error, value = DictField(children_field=IntField(), required=True).validate_it(self._first)
+        assert not error
+
+    def test_default_not_required(self):
+        error, value = DictField(children_field=IntField(), default=self._first).validate_it(None)
+        assert value == self._as_first
+
+        error, value = DictField(children_field=IntField(), default={}).validate_it(None)
+        assert value == {}
+
+        value['a'] = 1
+
+        error, value = DictField(children_field=IntField(), default={}).validate_it(None)
+        assert value == {}
+
+        error, value = DictField(children_field=IntField(), default=self._first).validate_it(self._second)
+        assert value == self._as_second
+
+    def test_default_required(self):
+        error, value = DictField(children_field=IntField(), default=self._first, required=True).validate_it(None)
+        assert not error
+        assert value == self._as_first
+
+    def test_default_callable_not_required(self):
+        error, value = DictField(children_field=IntField(), default=lambda: self._first).validate_it(None)
+        assert value == self._as_first
+
+        error, value = DictField(children_field=IntField(), default=lambda: {}).validate_it(None)
+        assert value == {}
+
+        value['a'] = 1
+
+        error, value = DictField(children_field=IntField(), default=lambda: {}).validate_it(None)
+        assert value == {}
+
+        error, value = DictField(children_field=IntField(), default=lambda: self._first).validate_it(self._second)
+        assert value == self._as_second
+
+    def test_default_callable_required(self):
+        error, value = DictField(
+            children_field=IntField(), default=lambda: self._first, required=True
+        ).validate_it(None)
+        assert not error
+        assert value == self._as_first
+
+    def test_wrong_type(self):
+        error, value = DictField(children_field=IntField()).validate_it(1.0)
+        assert error
+
+    def test_only(self):
+        error, value = DictField(children_field=IntField(), only=[self._first, self._second]).validate_it(self._third)
+        assert error
+
+        error, value = DictField(
+            children_field=IntField(), only=[self._first, self._second]
+        ).validate_it(self._as_first)
+        assert not error
+
+    def test_only_callable(self):
+        error, value = DictField(
+            children_field=IntField(), only=lambda: [self._first, self._second]
+        ).validate_it(self._third)
+        assert error
+
+        error, value = DictField(
+            children_field=IntField(), only=lambda: [self._first, self._second]
+        ).validate_it(self._as_first)
+        assert not error
+
+    def test_amount(self):
+        pass
+
+    def test_length(self):
+        pass
+
+    def test_strip_unknown(self):
+        pass
+
+    def test_convert(self):
+        error, value = DictField(children_field=IntField()).validate_it({'a': '1', 'b': 2.0}, convert=True)
+        assert not error
+        assert value == {'a': 1, 'b': 2}
+
+
+class DatetimeFieldTestCase(TestCase):
+    _first = datetime.now()
+
+    _as_first = datetime(
+        year=_first.year,
+        month=_first.month,
+        day=_first.day,
+        hour=_first.hour,
+        minute=_first.minute,
+        second=_first.second,
+        microsecond=_first.microsecond
+    )
+
+    _second = datetime.now()
+
+    _as_second = datetime(
+        year=_second.year,
+        month=_second.month,
+        day=_second.day,
+        hour=_second.hour,
+        minute=_second.minute,
+        second=_second.second,
+        microsecond=_second.microsecond
+    )
+
+    _third = datetime.now()
+
+    def test_required(self):
+        error, value = DatetimeField(required=True).validate_it(None)
+        assert error
+
+        error, value = DatetimeField(required=True).validate_it(self._first)
+        assert not error
+
+    def test_default_not_required(self):
+        error, value = DatetimeField(default=self._first).validate_it(None)
+        assert value == self._as_first
+
+        error, value = DatetimeField(default=self._first).validate_it(self._second)
+        assert value == self._as_second
+
+    def test_default_required(self):
+        error, value = DatetimeField(default=self._first, required=True).validate_it(None)
+        assert not error
+        assert value == self._as_first
+
+    def test_default_callable_not_required(self):
+        error, value = DatetimeField(default=lambda: self._first).validate_it(None)
+        assert value == self._as_first
+
+        error, value = DatetimeField(default=lambda: self._first).validate_it(self._second)
+        assert value == self._as_second
+
+    def test_default_callable_required(self):
+        error, value = DatetimeField(default=lambda: self._first, required=True).validate_it(None)
+        assert not error
+        assert value == self._as_first
+
+    def test_wrong_type(self):
+        error, value = DatetimeField().validate_it(1.0)
+        assert error
+
+    def test_only(self):
+        error, value = DatetimeField(only=[self._first, self._second]).validate_it(self._third)
+        assert error
+
+        error, value = DatetimeField(only=[self._first, self._second]).validate_it(self._as_first)
+        assert not error
+
+    def test_only_callable(self):
+        error, value = DatetimeField(only=lambda: [self._first, self._second]).validate_it(self._third)
+        assert error
+
+        error, value = DatetimeField(only=lambda: [self._first, self._second]).validate_it(self._as_first)
+        assert not error
+
+    def test_amount(self):
+        pass
+
+    def test_length(self):
+        pass
+
+    def test_strip_unknown(self):
+        pass
+
+    def test_convert(self):
+        pass
+
+
+class AnyTestCase(TestCase):
+    def test_required(self):
+        pass
+
+    def test_default_not_required(self):
+        pass
+
+    def test_default_required(self):
+        pass
+
+    def test_default_callable_not_required(self):
+        pass
+
+    def test_default_callable_required(self):
+        pass
+
+    def test_wrong_type(self):
+        pass
+
+    def test_only(self):
+        pass
+
+    def test_only_callable(self):
+        pass
+
+    def test_amount(self):
+        pass
+
+    def test_length(self):
+        pass
+
+    def test_strip_unknown(self):
+        pass
+
+    def test_convert(self):
+        pass
 
 
 class UnionTestCase(TestCase):
-    def test_no_alternatives(self):
-        with self.assertRaises(ValueError):
-            UnionType(alternatives=[])
+    def test_required(self):
+        pass
 
-    def test_first_coincidence(self):
-        _field = UnionType(field_name='union', alternatives=[
-            IntField(),
-            FloatField()
-        ])
+    def test_default_not_required(self):
+        pass
 
-        _error, _value = _field.validate_it(0.1, False, False)
-        assert not _error
+    def test_default_required(self):
+        pass
 
-    def test_wrong_alternatives(self):
-        _field = UnionType(field_name='union', alternatives=[
-            IntField(),
-            FloatField()
-        ])
+    def test_default_callable_not_required(self):
+        pass
 
-        _error, _value = _field.validate_it('0.1', False, False)
-        assert _error
-        self.assertEqual('0.1', _value)
+    def test_default_callable_required(self):
+        pass
+
+    def test_wrong_type(self):
+        pass
+
+    def test_only(self):
+        pass
+
+    def test_only_callable(self):
+        pass
+
+    def test_amount(self):
+        pass
+
+    def test_length(self):
+        pass
+
+    def test_strip_unknown(self):
+        pass
+
+    def test_convert(self):
+        pass
 
 
 class SchemaTestCase(TestCase):
+    def test_required(self):
+        pass
+
+    def test_default_not_required(self):
+        pass
+
+    def test_default_required(self):
+        pass
+
+    def test_default_callable_not_required(self):
+        pass
+
+    def test_default_callable_required(self):
+        pass
+
+    def test_wrong_type(self):
+        pass
+
+    def test_only(self):
+        pass
+
+    def test_only_callable(self):
+        pass
+
+    def test_amount(self):
+        pass
+
+    def test_length(self):
+        pass
+
     def test_strip_unknown(self):
-        class Original(Schema):
-            a = IntField()
-            b = IntField()
+        pass
 
-        _value = {'a': 1, 'b': 1, 'c': 1}
-        _error, value = Original().validate_it(_value, strip_unknown=True)
-        assert not _error
-        self.assertEqual({'a': 1, 'b': 1}, value)
-
-    def test_not_strip_unknown(self):
-        class Original(Schema):
-            a = IntField()
-            b = IntField()
-
-        _value = {'a': 1, 'b': 1, 'c': 1}
-        _error, value = Original().validate_it(_value)
-        assert _error
-        self.assertEqual(_value, value)
-
-    def test_clone(self):
-        class Original(Schema):
-            a = IntField()
-            b = IntField()
-            c = IntField()
-            d = IntField()
-
-        clone = Original().only_fields('a')
-        self.assertEqual(list(clone.get_fields().keys()), ['a'])
-
-        clone = Original().exclude_fields('b', 'd')
-        self.assertEqual(list(clone.get_fields().keys()), ['a', 'c'])
+    def test_convert(self):
+        pass

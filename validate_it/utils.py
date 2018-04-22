@@ -9,8 +9,10 @@ class NullableValidator(object):
     _type = attr.ib()
 
     def __call__(self, instance, attribute, value):
+        if inspect.isfunction(value):
+            value = value()
 
-        if not isinstance(value, self._type) and value is not None and not inspect.isfunction(value):
+        if not isinstance(value, self._type) and value is not None:
             raise TypeError(
                 f"'{attribute.name}' must be {self._type} or None (got {value} that is a {value.__class__})."
             )
@@ -18,6 +20,24 @@ class NullableValidator(object):
 
 def is_none_or_instance_of(_type):
     return NullableValidator(type=_type)
+
+
+@attr.s(repr=False, slots=True, hash=True)
+class CallableValidator(object):
+    _type = attr.ib()
+
+    def __call__(self, instance, attribute, value):
+        if inspect.isfunction(value):
+            value = value()
+
+        if not isinstance(value, self._type):
+            raise TypeError(
+                f"'{attribute.name}' must be {self._type} or callable (got {value} that is a {value.__class__})."
+            )
+
+
+def is_callable_or_instance_of(_type):
+    return CallableValidator(type=_type)
 
 
 def is_class(instance, attribute, value):
@@ -88,6 +108,9 @@ def validate_length(value, min_length, max_length) -> typing.Tuple[typing.Union[
 
 
 def validate_belonging(value, only) -> typing.Tuple[str, typing.Any]:
+    if callable(only):
+        only = only()
+
     if only and value not in only:
         return f"Value must belong to `{only}`", value
     else:

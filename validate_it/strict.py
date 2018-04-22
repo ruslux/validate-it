@@ -5,7 +5,8 @@ from datetime import datetime
 import attr
 
 from validate_it.base import Validator
-from validate_it.utils import is_none_or_instance_of, validate_belonging, validate_length, validate_amount
+from validate_it.utils import is_none_or_instance_of, validate_belonging, validate_length, validate_amount, \
+    is_callable_or_instance_of
 
 
 @attr.s(slots=True)
@@ -14,7 +15,7 @@ class StrictType(Validator):
     _description = attr.ib(default='', validator=[attr.validators.instance_of(str)])
     _required = attr.ib(default=False, validator=[attr.validators.instance_of(bool)])
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(object)])
-    _only = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(collections.Iterable)])
+    _only = attr.ib(default=attr.Factory(list), validator=[is_callable_or_instance_of(list)])
     _validators = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(collections.Iterable)])
 
     @property
@@ -61,7 +62,12 @@ class StrictType(Validator):
         if self._description:
             _data['description'] = self._description
 
-        if self._only:
+        if self._only and callable(self._only):
+            _data['default'] = {
+                'type': 'callable',
+                'example': self._only()
+            }
+        elif self._only:
             _data['only'] = self._only
 
         if self._default and callable(self._default):
@@ -110,7 +116,7 @@ class StrictType(Validator):
         return '', value
 
     def validate_type(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
-        if not isinstance(value, self._base_type) and convert:
+        if type(value) not in (self._base_type,) and convert:
             value = self.convert(value)
 
         if isinstance(value, self._base_type):
@@ -326,9 +332,6 @@ class TupleField(StrictType):
     _elements = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(list)])
 
     def __attrs_post_init__(self):
-        if not self._elements:
-            raise TypeError(f"`elements` list must be not empty")
-
         for _element in self._elements:
             if not isinstance(_element, Validator):
                 raise TypeError(f"`elements` element must be `field.Validator` instance")
@@ -363,6 +366,9 @@ class TupleField(StrictType):
         return _errors, tuple(value)
 
     def validate_other(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
+        if not self._elements:
+            return {}, value
+
         _error, value = self.validate_length(value, convert, strip_unknown)
 
         if not _error:
