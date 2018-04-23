@@ -10,9 +10,6 @@ class AnyType(StrictType):
     """
     _base_type = object
 
-    def representation(self):
-        return 'any type'
-
 
 __all__ = [
     'AnyType'

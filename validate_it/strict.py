@@ -18,10 +18,6 @@ class StrictType(Validator):
     _only = attr.ib(default=attr.Factory(list), validator=[is_callable_or_instance_of(list)])
     _validators = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(collections.Iterable)])
 
-    @property
-    def extended_type(self):
-        return self.__class__.__name__
-
     def __attrs_post_init__(self):
         if self._only and self._default is not None:
             if callable(self._default):
@@ -51,13 +47,9 @@ class StrictType(Validator):
                 )
 
     def representation(self):
-        _data = {
-            'base_type': self._base_type.__name__,
-            'required': self._required
-        }
+        _data = super().representation()
 
-        if self.extended_type:
-            _data['extended_type'] = self.extended_type
+        _data['required'] = self._required
 
         if self._description:
             _data['description'] = self._description
