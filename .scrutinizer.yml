@@ -8,3 +8,14 @@ filter:
 build:
     environment:
         python: 3.6
+    dependencies:
+        before:
+            - pip install -r ./dev-requirements.txt
+    tests:
+        override:
+            -
+                command: './run_tests.sh'
+                coverage:
+                    file: '.coverage'
+                    config_file: '.coveragerc'
+                    format: 'py-cc'
