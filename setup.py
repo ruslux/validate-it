@@ -1,11 +1,10 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
+
 version = "0.2.3"
 
 setup(
     name="validate-it",
-    packages=[
-        "validate_it",
-    ],
+    packages=find_packages(),
     version=version,
     description="Yet another schema validator",
     long_description="Yet another schema validator",
@@ -16,6 +15,8 @@ setup(
     keywords=["schema", "validator", "json"],
     classifiers=[],
     python_requires='>3.6.0',
+    platforms=['OS Independent'],
+    license='LICENSE.txt',
     install_requires=[
         'attrs (==17.4.0)'
     ],
