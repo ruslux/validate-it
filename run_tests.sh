@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 export PYTHONPATH="$(pwd)"/validate_it:$PYTHONPATH
-py.test tests --cov=validate_it
+coverage run --source='./validate_it/' -m pytest tests -vv && coverage combine && coverage report && coverage erase
