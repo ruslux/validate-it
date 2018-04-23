@@ -10,8 +10,6 @@ from validate_it.utils import is_none_or_instance_of, is_callable_or_instance_of
 
 @attr.s(slots=True)
 class StrictType(Validator):
-    _base_type = object
-    _description = attr.ib(default='', validator=[attr.validators.instance_of(str)])
     _required = attr.ib(default=False, validator=[attr.validators.instance_of(bool)])
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(object)])
     _only = attr.ib(default=attr.Factory(list), validator=[is_callable_or_instance_of(list)])

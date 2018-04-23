@@ -27,7 +27,11 @@ class UnionType(Validator):
     )
 
     def representation(self):
-        return {'one of': [x.representation() for x in self._alternatives]}
+        _data = super().representation()
+
+        _data['one of'] = [x.representation() for x in self._alternatives]
+
+        return _data
 
     def validate_it(self, value, convert=False, strip_unknown=False) -> Tuple[dict, dict]:
         _errors = {}
