@@ -5,8 +5,7 @@ from datetime import datetime
 import attr
 
 from validate_it.base import Validator
-from validate_it.utils import is_none_or_instance_of, validate_belonging, validate_length, validate_amount, \
-    is_callable_or_instance_of
+from validate_it.utils import is_none_or_instance_of, is_callable_or_instance_of
 
 
 @attr.s(slots=True)
@@ -82,7 +81,7 @@ class StrictType(Validator):
             _error, value = self.validate_type(value, convert, strip_unknown)
 
         if not _error and value is not None:
-            _error, value = self.validate_only(value, convert, strip_unknown)
+            _error, value = self.validate_only(value)
 
         if not _error and value is not None:
             _error, value = self.validate_other(value, convert, strip_unknown)
@@ -116,8 +115,16 @@ class StrictType(Validator):
 
         return "Wrong type", value
 
-    def validate_only(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
-        return validate_belonging(value, self._only)
+    def validate_only(self, value) -> typing.Tuple[str, typing.Any]:
+        only = self._only
+
+        if callable(self._only):
+            only = self._only()
+
+        if only and value not in only:
+            return f"Value must belong to `{only}`", value
+        else:
+            return "", value
 
     def validate_other(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
         return {}, value
@@ -149,8 +156,25 @@ class BoolField(StrictType):
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(bool)])
 
 
+@attr.s
+class AmountMixin(object):
+    _min_value = attr.ib()
+    _max_value = attr.ib()
+
+    def validate_amount(self, value) -> typing.Tuple[typing.Union[typing.Any, str], typing.Any]:
+        if self._min_value is not None:
+            if value < self._min_value:
+                return f"Value must be greater than `{self._min_value}`", value
+
+        if self._max_value is not None:
+            if value > self._max_value:
+                return f"Value must be lesser than `{self._max_value}`", value
+
+        return {}, value
+
+
 @attr.s(slots=True)
-class __Number(StrictType):
+class __Number(AmountMixin, StrictType):
     def representation(self):
         _data = super().representation()
 
@@ -163,7 +187,7 @@ class __Number(StrictType):
         return _data
 
     def validate_other(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
-        return validate_amount(value, self._min_value, self._max_value)
+        return self.validate_amount(value)
 
 
 @attr.s(slots=True)
@@ -190,16 +214,31 @@ class FloatField(__Number):
     _max_value = attr.ib(default=None, validator=[is_none_or_instance_of(float)])
 
 
+@attr.s
+class LengthMixin(object):
+    _min_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
+    _max_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
+
+    def validate_length(self, value) -> typing.Tuple[typing.Union[typing.Any, str], typing.Any]:
+        if self._min_length is not None:
+            if len(value) < self._min_length:
+                return f"Value length must be greater than `{self._min_length}`", value
+
+        if self._max_length is not None:
+            if len(value) > self._max_length:
+                return f"[Value length must be lesser than `{self._max_length}`", value
+
+        return {}, value
+
+
 @attr.s(slots=True)
-class StrField(StrictType):
+class StrField(LengthMixin, StrictType):
     """
     Поле для значений типа ``str``
     """
 
     _base_type = str
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(str)])
-    _min_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
-    _max_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
 
     def representation(self):
         _data = super().representation()
@@ -213,11 +252,11 @@ class StrField(StrictType):
         return _data
 
     def validate_other(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
-        return validate_length(value, self._min_length, self._max_length)
+        return self.validate_length(value)
 
 
 @attr.s(slots=True)
-class ListField(StrictType):
+class ListField(LengthMixin, StrictType):
     """
     Поле для значений типа ``list``, который хранит в себе значения типа указанного в ``children_type``
 
@@ -241,12 +280,7 @@ class ListField(StrictType):
 
     _base_type = list
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(list)])
-    _min_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
-    _max_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
     _children_field = attr.ib(default=None, validator=[is_none_or_instance_of(Validator)])
-
-    def validate_length(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
-        return validate_length(value, self._min_length, self._max_length)
 
     def validate_items(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
         _errors = {}
@@ -263,7 +297,7 @@ class ListField(StrictType):
         return _errors, value
 
     def validate_other(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
-        _error, value = self.validate_length(value, convert, strip_unknown)
+        _error, value = self.validate_length(value)
 
         if not _error:
             _error, value = self.validate_items(value, convert, strip_unknown)
