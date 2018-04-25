@@ -26,10 +26,10 @@ class UnionType(Validator):
         default=attr.Factory(list), validator=[attr.validators.instance_of(list), list_of(Validator), not_empty]
     )
 
-    def representation(self):
-        _data = super().representation()
+    def representation(self, **kwargs):
+        _data = super().representation(**kwargs)
 
-        _data['one of'] = [x.representation() for x in self._alternatives]
+        _data['one of'] = [x.representation(**kwargs) for x in self._alternatives]
 
         return _data
 

@@ -31,11 +31,13 @@ class Validator:
     def get_singleton_name(cls, *args, **kwargs):
         return cls.__name__ + str(kwargs)
 
-    def representation(self):
+    def representation(self, **kwargs):
         _data = {
             'base_type': self._base_type.__name__,
             'extended_type': self.extended_type
         }
+
+        _data.update(**kwargs)
 
         if self._field_name:
             _data['name'] = self._field_name

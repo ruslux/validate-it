@@ -43,8 +43,8 @@ class StrictType(Validator):
                     f"`validator` {_validator}"
                 )
 
-    def representation(self):
-        _data = super().representation()
+    def representation(self, **kwargs):
+        _data = super().representation(**kwargs)
 
         _data['required'] = self._required
 
@@ -52,9 +52,10 @@ class StrictType(Validator):
             _data['description'] = self._description
 
         if self._only and callable(self._only):
-            _data['default'] = {
+            _data['only'] = {
                 'type': 'callable',
-                'example': self._only()
+                'example': self._only(),
+                'callable': self._only
             }
         elif self._only:
             _data['only'] = self._only
@@ -62,7 +63,8 @@ class StrictType(Validator):
         if self._default and callable(self._default):
             _data['default'] = {
                 'type': 'callable',
-                'example': self._default()
+                'example': self._default(),
+                'callable': self._default
             }
         elif self._default:
             _data['default'] = self._default
@@ -173,8 +175,8 @@ class AmountMixin(object):
 
 @attr.s(slots=True)
 class __Number(AmountMixin, StrictType):
-    def representation(self):
-        _data = super().representation()
+    def representation(self, **kwargs):
+        _data = super().representation(**kwargs)
 
         if self._max_value:
             _data['max_value'] = self._max_value
@@ -238,8 +240,8 @@ class StrField(LengthMixin, StrictType):
     _base_type = str
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(str)])
 
-    def representation(self):
-        _data = super().representation()
+    def representation(self, **kwargs):
+        _data = super().representation(**kwargs)
 
         if self._max_length:
             _data['max_length'] = self._max_length
@@ -302,8 +304,8 @@ class ListField(LengthMixin, StrictType):
 
         return _error, value
 
-    def representation(self):
-        _data = super().representation()
+    def representation(self, **kwargs):
+        _data = super().representation(**kwargs)
 
         if self._max_length:
             _data['max_length'] = self._max_length
@@ -312,7 +314,7 @@ class ListField(LengthMixin, StrictType):
             _data['min_length'] = self._min_length
 
         if self._children_field:
-            _data['children_field'] = self._children_field.representation()
+            _data['children_field'] = self._children_field.representation(**kwargs)
 
         return _data
 
@@ -360,9 +362,9 @@ class TupleField(StrictType):
             if not isinstance(_element, Validator):
                 raise TypeError(f"`elements` element must be `field.Validator` instance")
 
-    def representation(self):
-        _data = super().representation()
-        _data['elements'] = [_field.representation() for _field in self._elements]
+    def representation(self, **kwargs):
+        _data = super().representation(**kwargs)
+        _data['elements'] = [_field.representation(**kwargs) for _field in self._elements]
 
         return _data
 
@@ -430,11 +432,11 @@ class DictField(StrictType):
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(dict)])
     _children_field = attr.ib(default=None, validator=[is_none_or_instance_of(Validator)])
 
-    def representation(self):
-        _data = super().representation()
+    def representation(self, **kwargs):
+        _data = super().representation(**kwargs)
 
         if self._children_field:
-            _data['children_field'] = self._children_field.representation()
+            _data['children_field'] = self._children_field.representation(**kwargs)
 
         return _data
 
@@ -498,9 +500,9 @@ class Schema(StrictType):
     def get_singleton_name(cls, *args, **kwargs):
         return cls.__name__ + '_' + str(cls.get_fields()) + '_' + str(kwargs)
 
-    def representation(self):
-        _data = super().representation()
-        _data['schema'] = {x: y.representation() for x, y in self.get_fields().items()}
+    def representation(self, **kwargs):
+        _data = super().representation(**kwargs)
+        _data['schema'] = {x: y.representation(**kwargs) for x, y in self.get_fields().items()}
         return _data
 
     @classmethod

@@ -5,8 +5,10 @@ from validate_it import *
 
 class TestClone(TestCase):
     def test_representation(self):
-        assert IntField(required=True, min_value=1, max_value=10).representation() == {
-            'base_type': 'int', 'required': True, 'min_value': 1, 'max_value': 10, 'extended_type': 'IntField'
+        _field = IntField(required=True, min_value=1, max_value=10, only=lambda: [1, 2])
+        assert _field.representation() == {
+            'base_type': 'int', 'required': True, 'min_value': 1, 'max_value': 10, 'extended_type': 'IntField',
+            'only': {'example': [1, 2], 'type': 'callable', 'callable': _field._only},
         }
 
         assert FloatField(only=[0.1, 0.2], min_value=0.1, max_value=0.2).representation() == {
@@ -18,9 +20,11 @@ class TestClone(TestCase):
             'base_type': 'bool', 'default': True, 'required': False, 'extended_type': 'BoolField'
         }
 
-        assert StrField(default=lambda: 'a', min_length=1, max_length=2).representation() == {
-            'base_type': 'str', 'default': {'example': 'a', 'type': 'callable'}, 'required': False, 'min_length': 1,
-            'max_length': 2, 'extended_type': 'StrField'
+        _field = StrField(default=lambda: 'a', min_length=1, max_length=2)
+
+        assert _field.representation() == {
+            'base_type': 'str', 'default': {'example': 'a', 'type': 'callable', 'callable': _field._default},
+            'required': False, 'min_length': 1, 'max_length': 2, 'extended_type': 'StrField',
         }
 
         assert ListField(children_field=AnyType(), min_length=1, max_length=19).representation() == {
@@ -46,21 +50,21 @@ class TestClone(TestCase):
             a = AnyType()
             b = AnyType()
 
-        assert SomeSchema().representation() == {
+        assert SomeSchema().representation(kwargs=True) == {
             'required': True, 'base_type': 'dict', 'schema': {
                 'a': {
-                    'base_type': 'object', 'extended_type': 'AnyType', 'name': 'a', 'required': False
+                    'base_type': 'object', 'extended_type': 'AnyType', 'name': 'a', 'required': False, 'kwargs': True
                 },
                 'b': {
-                    'base_type': 'object', 'extended_type': 'AnyType', 'name': 'b', 'required': False
+                    'base_type': 'object', 'extended_type': 'AnyType', 'name': 'b', 'required': False, 'kwargs': True
                 }
-            }, 'extended_type': 'SomeSchema'
+            }, 'extended_type': 'SomeSchema', 'kwargs': True
         }
 
-        assert UnionType(alternatives=[IntField(), FloatField()], description="one of").representation() == {
-            'base_type': 'object', 'description': 'one of', 'extended_type': 'UnionType',
+        assert UnionType(alternatives=[IntField(), FloatField()], description="one of").representation(end=True) == {
+            'base_type': 'object', 'description': 'one of', 'extended_type': 'UnionType', 'end': True,
             'one of': [
-                {'base_type': 'int', 'required': False, 'extended_type': 'IntField'},
-                {'base_type': 'float', 'required': False, 'extended_type': 'FloatField'}
+                {'base_type': 'int', 'required': False, 'end': True, 'extended_type': 'IntField'},
+                {'base_type': 'float', 'required': False, 'end': True, 'extended_type': 'FloatField'}
             ]
         }
