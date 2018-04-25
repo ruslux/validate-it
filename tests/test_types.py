@@ -749,28 +749,55 @@ class DatetimeFieldTestCase(TestCase):
 
 class AnyTestCase(TestCase):
     def test_required(self):
-        pass
+        error, value = AnyType(required=True).validate_it(None)
+        assert error
+
+        error, value = AnyType(required=True).validate_it(1)
+        assert not error
+
+        error, value = AnyType(required=True).validate_it('1')
+        assert not error
 
     def test_default_not_required(self):
-        pass
+        error, value = AnyType(default=1).validate_it(None)
+        assert not error
+        assert value == 1
 
     def test_default_required(self):
-        pass
+        error, value = AnyType(default=1, required=True).validate_it(None)
+        assert not error
+        assert value == 1
 
     def test_default_callable_not_required(self):
-        pass
+        error, value = AnyType(default=lambda: 1).validate_it(None)
+        assert not error
+        assert value == 1
 
     def test_default_callable_required(self):
-        pass
+        error, value = AnyType(default=lambda: 1, required=True).validate_it(None)
+        assert not error
+        assert value == 1
 
     def test_wrong_type(self):
         pass
 
     def test_only(self):
-        pass
+        error, value = AnyType(only=[1, 'a', 3.0]).validate_it(4)
+        assert error
+        assert value == 4
+
+        error, value = AnyType(only=[1, 'a', 3.0]).validate_it(1)
+        assert not error
+        assert value == 1
 
     def test_only_callable(self):
-        pass
+        error, value = AnyType(only=lambda: [1, 'a', 3.0]).validate_it(4)
+        assert error
+        assert value == 4
+
+        error, value = AnyType(only=lambda: [1, 'a', 3.0]).validate_it(1)
+        assert not error
+        assert value == 1
 
     def test_amount(self):
         pass
@@ -787,10 +814,49 @@ class AnyTestCase(TestCase):
 
 class UnionTestCase(TestCase):
     def test_required(self):
-        pass
+        error, value = UnionType(
+            alternatives=[
+                IntField(required=True),
+                FloatField(required=True)
+            ]
+        ).validate_it(None)
+
+        assert error
+
+        error, value = UnionType(
+            alternatives=[
+                IntField(),
+                FloatField(required=True)
+            ]
+        ).validate_it(None)
+
+        assert not error
+
+        error, value = UnionType(
+            alternatives=[
+                IntField(required=True),
+                FloatField(required=True)
+            ]
+        ).validate_it(1)
+
+        assert not error
+
+        error, value = UnionType(
+            alternatives=[
+                IntField(required=True),
+                FloatField(required=True)
+            ]
+        ).validate_it(1.0)
+
+        assert not error
 
     def test_default_not_required(self):
-        pass
+        error, value = UnionType(
+            alternatives=[
+                IntField(required=True),
+                FloatField(required=True)
+            ]
+        ).validate_it(None)
 
     def test_default_required(self):
         pass
