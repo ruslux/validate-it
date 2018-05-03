@@ -7,6 +7,8 @@
 
 - [About](#about)
 - [Installation](#installation)
+- [Available fields](#fields)
+- [Keyword arguments](#kwargs)
 - [Example](#example)
 - [Requirements](#requirements)
 
@@ -19,6 +21,107 @@ With pip:
 ```bash
 pip install validate-it
 ```
+
+### <a name="fields"/>Available fields</a>
+* ``BoolField``
+  ```python
+  error, value = BoolField(default=True).validate_it(None)
+  assert value
+  ```
+* ``IntField``
+    ```python
+    error, value = IntField().validate_it('10', convert=True)
+    assert value == 10
+    ```
+* ``FloatField``
+    ```python
+    error, value = FloatField().validate_it(9, convert=True)
+    assert value == 9.0
+    ```
+* ``ListField``
+    ```python
+    errors, value = ListField(
+        children_field=IntField()
+    ).validate_it([1, 2, 3, 4])
+
+    assert value == [1, 2, 3, 4]
+    assert not errors
+    ```
+* ``TupleField``
+    ```python
+    errors, value = TupleField(
+        elemetns=(
+            IntField(),
+            FloatField(),
+            StrField()
+        )
+    ).validate_it((1, 2.0, '3'))
+
+    assert value == (1, 2.0, '3')
+    assert not errors
+    ```
+* ``DictField``
+    ```python
+    errors, value = DictField(
+        children_field=IntField()
+    ).validate_it({'a': 1, 'b': 2, 'c': 3})
+
+    assert value == {'a': 1, 'b': 2, 'c': 3}
+    assert not errors
+    ```
+* ``DatetimeField``
+    ```python
+    errors, value = DatetimeField().validate_it(datetime.now())
+    assert not errors
+    ```
+
+* ``Schema``
+    ```python
+    class Author(Schema):
+        first_name = StrField()
+        last_name = StrField()
+
+    class Post(Schema):
+        title = StrField()
+        text = StrField()
+        author = Author()
+
+    errors, value = Post().validate_it(
+        {
+            "title": "Hello",
+            "text": "World",
+            "author" {
+                "first_name": "John",
+                "last_name": "Smith"
+            }
+        }
+    )
+    assert not errors
+    ```
+
+
+### <a name="kwargs"/>Keyword arguments</a>
+All fields:
+* ``required`` - value is required (default is ``False``)
+* ``only`` - list of available values (can be callable, default allow any)
+* ``default`` - set default if value is ``None`` (can be callable, default is ``None``)
+* ``validators`` - list of custom callable validators
+
+StrField, ListField:
+* ``min_length`` - minimal sequence length (default is ``None``)
+* ``max_length`` - maximum sequence length (default is ``None``)
+
+ListField, DictField:
+* ``children_field`` - required ``Validator`` subclass for value
+
+TupleField:
+* ``elements`` - tuple of ``Validator`` subclasses
+
+IntField, FloatField:
+* ``min_value``
+* ``max_value``
+
+
 
 ### <a name="example"/>Example</a>
 ```python
