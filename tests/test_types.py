@@ -883,7 +883,22 @@ class UnionTestCase(TestCase):
         pass
 
     def test_strip_unknown(self):
-        pass
+
+        class A(Schema):
+            a = IntField(required=True)
+
+        class B(Schema):
+            b = IntField(required=True)
+
+        error, value = UnionType(
+            alternatives=[
+                A(),
+                B()
+            ]
+        ).validate_it({'b': 1}, strip_unknown=True)
+
+        assert not error
+        assert value == {'b': 1}
 
     def test_convert(self):
         pass
