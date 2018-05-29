@@ -541,14 +541,19 @@ class Schema(StrictType):
         _copy = {}
 
         for _name, _field in self.get_fields().items():
-            _error, _value = _field.validate_it(value.get(_name), convert, strip_unknown)
+            _check = value.get(_field._alias) if _field._alias else value.get(_name)
+
+            _error, _value = _field.validate_it(_check, convert, strip_unknown)
 
             if _error:
                 _errors[_name] = _error
             elif _value is None:
                 continue
 
-            _copy[_name] = _value
+            if _field._rename:
+                _copy[_field._rename] = _value
+            else:
+                _copy[_name] = _value
 
             _schema_keys.add(_name)
 

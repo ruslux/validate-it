@@ -8,6 +8,8 @@ class Validator:
     _singletons = {}
     _base_type = object
     _field_name = attr.ib(default='', validator=[attr.validators.instance_of(str)])
+    _alias = attr.ib(default='', validator=[attr.validators.instance_of(str)])
+    _rename = attr.ib(default='', validator=[attr.validators.instance_of(str)])
     _description = attr.ib(default='', validator=[attr.validators.instance_of(str)])
 
     def __set_name__(self, owner, name):

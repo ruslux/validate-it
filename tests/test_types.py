@@ -940,3 +940,11 @@ class SchemaTestCase(TestCase):
 
     def test_convert(self):
         pass
+
+    def test_alias(self):
+        class A(Schema):
+            a = IntField(required=True, alias='b', rename='c')
+
+        error, value = A().validate_it({'b': 1}, strip_unknown=True)
+        assert not error
+        assert value == {'c': 1}
