@@ -280,14 +280,14 @@ class ListField(LengthMixin, StrictType):
 
     _base_type = list
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(list)])
-    _children_field = attr.ib(default=None, validator=[is_none_or_instance_of(Validator)])
+    _nested = attr.ib(default=None, validator=[is_none_or_instance_of(Validator)])
 
     def validate_items(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
         _errors = {}
 
         if value:
             for _index, _item in enumerate(value):
-                _item_error, _item = self._children_field.validate_it(_item, convert, strip_unknown)
+                _item_error, _item = self._nested.validate_it(_item, convert, strip_unknown)
 
                 if _item_error:
                     _errors[_index] = _item_error
@@ -313,8 +313,8 @@ class ListField(LengthMixin, StrictType):
         if self._min_length:
             _data['min_length'] = self._min_length
 
-        if self._children_field:
-            _data['children_field'] = self._children_field.representation(**kwargs)
+        if self._nested:
+            _data['nested'] = self._nested.representation(**kwargs)
 
         return _data
 
@@ -355,21 +355,21 @@ class TupleField(StrictType):
 
     _base_type = tuple
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(tuple)])
-    _elements = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(list)])
+    _nested = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(list)])
 
     def __attrs_post_init__(self):
-        for _element in self._elements:
+        for _element in self._nested:
             if not isinstance(_element, Validator):
-                raise TypeError(f"`elements` element must be `field.Validator` instance")
+                raise TypeError(f"`nested` element must be `field.Validator` instance")
 
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
-        _data['elements'] = [_field.representation(**kwargs) for _field in self._elements]
+        _data['nested'] = [_field.representation(**kwargs) for _field in self._nested]
 
         return _data
 
     def validate_length(self, value, convert, strip_unknown) -> typing.Tuple[str, typing.Any]:
-        if len(value) == len(self._elements):
+        if len(value) == len(self._nested):
             return '', value
         else:
             return "Tuple length does not match with value length", value
@@ -380,7 +380,7 @@ class TupleField(StrictType):
         value = list(value)
 
         if value:
-            for _index, _field in enumerate(self._elements):
+            for _index, _field in enumerate(self._nested):
                 _item = value[_index]
                 _item_error, _item = _field.validate_it(_item, convert, strip_unknown)
 
@@ -392,7 +392,7 @@ class TupleField(StrictType):
         return _errors, tuple(value)
 
     def validate_other(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
-        if not self._elements:
+        if not self._nested:
             return {}, value
 
         _error, value = self.validate_length(value, convert, strip_unknown)
@@ -430,13 +430,13 @@ class DictField(StrictType):
 
     _base_type = dict
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(dict)])
-    _children_field = attr.ib(default=None, validator=[is_none_or_instance_of(Validator)])
+    _nested = attr.ib(default=None, validator=[is_none_or_instance_of(Validator)])
 
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
 
-        if self._children_field:
-            _data['children_field'] = self._children_field.representation(**kwargs)
+        if self._nested:
+            _data['nested'] = self._nested.representation(**kwargs)
 
         return _data
 
@@ -445,8 +445,8 @@ class DictField(StrictType):
 
         if value:
             for _key, _value in value.items():
-                self._children_field._field_name = self._field_name
-                _item_error, _value = self._children_field.validate_it(_value, convert, strip_unknown)
+                self._nested._field_name = self._field_name
+                _item_error, _value = self._nested.validate_it(_value, convert, strip_unknown)
 
                 if _item_error:
                     _errors[_key] = _item_error

@@ -27,21 +27,21 @@ class TestClone(TestCase):
             'required': False, 'min_length': 1, 'max_length': 2, 'extended_type': 'StrField',
         }
 
-        assert ListField(children_field=AnyType(), min_length=1, max_length=19).representation() == {
-            'base_type': 'list', 'required': False, 'children_field': {
+        assert ListField(nested=AnyType(), min_length=1, max_length=19).representation() == {
+            'base_type': 'list', 'required': False, 'nested': {
                 'base_type': 'object', 'extended_type': 'AnyType', 'required': False
             }, 'min_length': 1, 'max_length': 19, 'extended_type': 'ListField'
         }
 
-        assert TupleField(elements=[IntField(), FloatField()]).representation() == {
-            'base_type': 'tuple', 'required': False, 'elements': [
+        assert TupleField(nested=[IntField(), FloatField()]).representation() == {
+            'base_type': 'tuple', 'required': False, 'nested': [
                 {'base_type': 'int', 'required': False, 'extended_type': 'IntField'},
                 {'base_type': 'float', 'required': False, 'extended_type': 'FloatField'}
             ], 'extended_type': 'TupleField'
         }
 
-        assert DictField(children_field=AnyType()).representation() == {
-            'base_type': 'dict', 'children_field': {
+        assert DictField(nested=AnyType()).representation() == {
+            'base_type': 'dict', 'nested': {
                 'base_type': 'object', 'extended_type': 'AnyType', 'required': False
             }, 'required': False, 'extended_type': 'DictField'
         }

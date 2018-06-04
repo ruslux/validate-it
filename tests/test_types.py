@@ -340,106 +340,106 @@ class StrFieldTestCase(TestCase):
 
 class ListFieldTestCase(TestCase):
     def test_required(self):
-        error, value = ListField(children_field=IntField(), required=True).validate_it(None)
+        error, value = ListField(nested=IntField(), required=True).validate_it(None)
         assert error
 
-        error, value = ListField(children_field=IntField(), required=True).validate_it([])
+        error, value = ListField(nested=IntField(), required=True).validate_it([])
         assert not error
 
     def test_default_not_required(self):
-        error, value = ListField(children_field=IntField(), default=[1]).validate_it(None)
+        error, value = ListField(nested=IntField(), default=[1]).validate_it(None)
         assert value == [1]
 
-        error, value = ListField(children_field=IntField(), default=[]).validate_it(None)
+        error, value = ListField(nested=IntField(), default=[]).validate_it(None)
         assert value == []
 
-        error, value = ListField(children_field=IntField(), default=[1]).validate_it([2])
+        error, value = ListField(nested=IntField(), default=[1]).validate_it([2])
         assert value == [2]
 
     def test_default_required(self):
-        error, value = ListField(children_field=IntField(), default=[1], required=True).validate_it(None)
+        error, value = ListField(nested=IntField(), default=[1], required=True).validate_it(None)
         assert not error
         assert value == [1]
 
     def test_default_callable_not_required(self):
-        error, value = ListField(children_field=IntField(), default=lambda: [1]).validate_it(None)
+        error, value = ListField(nested=IntField(), default=lambda: [1]).validate_it(None)
         assert value == [1]
 
-        error, value = ListField(children_field=IntField(), default=lambda: []).validate_it(None)
+        error, value = ListField(nested=IntField(), default=lambda: []).validate_it(None)
         assert value == []
 
-        error, value = ListField(children_field=IntField(), default=lambda: [1]).validate_it([2])
+        error, value = ListField(nested=IntField(), default=lambda: [1]).validate_it([2])
         assert value == [2]
 
     def test_default_callable_required(self):
-        error, value = ListField(children_field=IntField(), default=lambda: [1], required=True).validate_it(None)
+        error, value = ListField(nested=IntField(), default=lambda: [1], required=True).validate_it(None)
         assert not error
         assert value == [1]
 
     def test_wrong_type(self):
-        error, value = ListField(children_field=IntField()).validate_it((1,))
+        error, value = ListField(nested=IntField()).validate_it((1,))
         assert error
 
     def test_only(self):
-        error, value = ListField(children_field=IntField(), only=[[1], [2, 3], [3, 4]]).validate_it([4, 5])
+        error, value = ListField(nested=IntField(), only=[[1], [2, 3], [3, 4]]).validate_it([4, 5])
         assert error
 
-        error, value = ListField(children_field=IntField(), only=[[1], [2, 3], [3, 4]]).validate_it([3, 4])
+        error, value = ListField(nested=IntField(), only=[[1], [2, 3], [3, 4]]).validate_it([3, 4])
         assert not error
 
     def test_only_callable(self):
-        error, value = ListField(children_field=IntField(), only=lambda: [[1], [2, 3], [3, 4]]).validate_it([4, 5])
+        error, value = ListField(nested=IntField(), only=lambda: [[1], [2, 3], [3, 4]]).validate_it([4, 5])
         assert error
 
-        error, value = ListField(children_field=IntField(), only=lambda: [[1], [2, 3], [3, 4]]).validate_it([3, 4])
+        error, value = ListField(nested=IntField(), only=lambda: [[1], [2, 3], [3, 4]]).validate_it([3, 4])
         assert not error
 
     def test_amount(self):
         pass
 
     def test_length(self):
-        error, value = ListField(children_field=IntField(), min_length=3).validate_it([1])
+        error, value = ListField(nested=IntField(), min_length=3).validate_it([1])
         assert error
 
-        error, value = ListField(children_field=IntField(), min_length=3).validate_it([1, 2, 3])
+        error, value = ListField(nested=IntField(), min_length=3).validate_it([1, 2, 3])
         assert not error
 
-        error, value = ListField(children_field=IntField(), max_length=3).validate_it([1, 2, 3, 4])
+        error, value = ListField(nested=IntField(), max_length=3).validate_it([1, 2, 3, 4])
         assert error
 
-        error, value = ListField(children_field=IntField(), max_length=3).validate_it([1, 2, 3])
+        error, value = ListField(nested=IntField(), max_length=3).validate_it([1, 2, 3])
         assert not error
 
     def test_strip_unknown(self):
         pass
 
     def test_convert(self):
-        error, value = ListField(children_field=IntField()).validate_it((1, 2.0, '3'), convert=True)
+        error, value = ListField(nested=IntField()).validate_it((1, 2.0, '3'), convert=True)
         assert not error
         assert value == [1, 2, 3]
 
-        error, value = ListField(children_field=IntField()).validate_it(10, convert=True)
+        error, value = ListField(nested=IntField()).validate_it(10, convert=True)
         assert not error
         assert value == [10]
 
-        error, value = ListField(children_field=StrField()).validate_it('abc', convert=True)
+        error, value = ListField(nested=StrField()).validate_it('abc', convert=True)
         assert not error
         assert value == ['abc']
 
 
 class TupleFieldTestCase(TestCase):
     def test_required(self):
-        error, value = TupleField(elements=[IntField(), FloatField(), StrField()], required=True).validate_it(None)
+        error, value = TupleField(nested=[IntField(), FloatField(), StrField()], required=True).validate_it(None)
         assert error
 
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()], required=True
+            nested=[IntField(), FloatField(), StrField()], required=True
         ).validate_it((1, 2.0, '3'))
         assert not error
 
     def test_default_not_required(self):
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()], default=(1, 2.0, '3.0')
+            nested=[IntField(), FloatField(), StrField()], default=(1, 2.0, '3.0')
         ).validate_it(None)
         assert value == (1, 2.0, '3.0')
 
@@ -447,65 +447,65 @@ class TupleFieldTestCase(TestCase):
         assert value == tuple()
 
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()], default=(1, 2.0, '3')
+            nested=[IntField(), FloatField(), StrField()], default=(1, 2.0, '3')
         ).validate_it((2, 3.0, '4.0'))
         assert value == (2, 3.0, '4.0')
 
     def test_default_required(self):
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()], default=(1, 2.0, '3'), required=True
+            nested=[IntField(), FloatField(), StrField()], default=(1, 2.0, '3'), required=True
         ).validate_it(None)
         assert not error
         assert value == (1, 2.0, '3')
 
     def test_default_callable_not_required(self):
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()], default=lambda: (1, 2.0, '3')
+            nested=[IntField(), FloatField(), StrField()], default=lambda: (1, 2.0, '3')
         ).validate_it(None)
         assert value == (1, 2.0, '3')
 
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()], default=lambda: tuple()
+            nested=[IntField(), FloatField(), StrField()], default=lambda: tuple()
         ).validate_it(None)
         assert value == tuple()
 
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()], default=lambda: (1, 2.0, '3')
+            nested=[IntField(), FloatField(), StrField()], default=lambda: (1, 2.0, '3')
         ).validate_it((2, 3.0, '4.0'))
         assert value == (2, 3.0, '4.0')
 
     def test_default_callable_required(self):
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()], default=lambda: (1, 2.0, '3'), required=True
+            nested=[IntField(), FloatField(), StrField()], default=lambda: (1, 2.0, '3'), required=True
         ).validate_it(None)
         assert not error
         assert value == (1, 2.0, '3')
 
     def test_wrong_type(self):
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()]
+            nested=[IntField(), FloatField(), StrField()]
         ).validate_it([1])
         assert error
 
     def test_only(self):
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()], only=[(1, 2.0, '3'), (2, 3.0, '4'), (3, 4.0, '5')]
+            nested=[IntField(), FloatField(), StrField()], only=[(1, 2.0, '3'), (2, 3.0, '4'), (3, 4.0, '5')]
         ).validate_it((4, 5.0, '6'))
         assert error
 
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()], only=[(1, 2.0, '3'), (2, 3.0, '4'), (3, 4.0, '5')]
+            nested=[IntField(), FloatField(), StrField()], only=[(1, 2.0, '3'), (2, 3.0, '4'), (3, 4.0, '5')]
         ).validate_it((1, 2.0, '3'))
         assert not error
 
     def test_only_callable(self):
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()], only=lambda: [(1, 2.0, '3'), (2, 3.0, '4'), (3, 4.0, '5')]
+            nested=[IntField(), FloatField(), StrField()], only=lambda: [(1, 2.0, '3'), (2, 3.0, '4'), (3, 4.0, '5')]
         ).validate_it((4, 5.0, '6'))
         assert error
 
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()], only=lambda: [(1, 2.0, '3'), (2, 3.0, '4'), (3, 4.0, '5')]
+            nested=[IntField(), FloatField(), StrField()], only=lambda: [(1, 2.0, '3'), (2, 3.0, '4'), (3, 4.0, '5')]
         ).validate_it((1, 2.0, '3'))
         assert not error
 
@@ -513,13 +513,13 @@ class TupleFieldTestCase(TestCase):
         pass
 
     def test_length(self):
-        error, value = TupleField(elements=[IntField(), FloatField(), StrField()]).validate_it((1, 2.0, '3'))
+        error, value = TupleField(nested=[IntField(), FloatField(), StrField()]).validate_it((1, 2.0, '3'))
         assert not error
 
-        error, value = TupleField(elements=[IntField(), FloatField(), StrField()]).validate_it((1, 2.0))
+        error, value = TupleField(nested=[IntField(), FloatField(), StrField()]).validate_it((1, 2.0))
         assert error
 
-        error, value = TupleField(elements=[IntField(), FloatField(), StrField()]).validate_it((1, 2.0, '3', []))
+        error, value = TupleField(nested=[IntField(), FloatField(), StrField()]).validate_it((1, 2.0, '3', []))
         assert error
 
     def test_strip_unknown(self):
@@ -527,13 +527,13 @@ class TupleFieldTestCase(TestCase):
 
     def test_convert(self):
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()]
+            nested=[IntField(), FloatField(), StrField()]
         ).validate_it([1, 2.0, '3'], convert=True)
         assert not error
         assert value == (1, 2.0, '3')
 
         error, value = TupleField(
-            elements=[IntField(), FloatField(), StrField()]
+            nested=[IntField(), FloatField(), StrField()]
         ).validate_it([1, 2, 3], convert=True)
         assert not error
         assert value == (1, 2.0, '3')
@@ -571,75 +571,75 @@ class DictFieldTestCase(TestCase):
     }
 
     def test_required(self):
-        error, value = DictField(children_field=IntField(), required=True).validate_it(None)
+        error, value = DictField(nested=IntField(), required=True).validate_it(None)
         assert error
 
-        error, value = DictField(children_field=IntField(), required=True).validate_it(self._first)
+        error, value = DictField(nested=IntField(), required=True).validate_it(self._first)
         assert not error
 
     def test_default_not_required(self):
-        error, value = DictField(children_field=IntField(), default=self._first).validate_it(None)
+        error, value = DictField(nested=IntField(), default=self._first).validate_it(None)
         assert value == self._as_first
 
-        error, value = DictField(children_field=IntField(), default={}).validate_it(None)
+        error, value = DictField(nested=IntField(), default={}).validate_it(None)
         assert value == {}
 
         value['a'] = 1
 
-        error, value = DictField(children_field=IntField(), default={}).validate_it(None)
+        error, value = DictField(nested=IntField(), default={}).validate_it(None)
         assert value == {}
 
-        error, value = DictField(children_field=IntField(), default=self._first).validate_it(self._second)
+        error, value = DictField(nested=IntField(), default=self._first).validate_it(self._second)
         assert value == self._as_second
 
     def test_default_required(self):
-        error, value = DictField(children_field=IntField(), default=self._first, required=True).validate_it(None)
+        error, value = DictField(nested=IntField(), default=self._first, required=True).validate_it(None)
         assert not error
         assert value == self._as_first
 
     def test_default_callable_not_required(self):
-        error, value = DictField(children_field=IntField(), default=lambda: self._first).validate_it(None)
+        error, value = DictField(nested=IntField(), default=lambda: self._first).validate_it(None)
         assert value == self._as_first
 
-        error, value = DictField(children_field=IntField(), default=lambda: {}).validate_it(None)
+        error, value = DictField(nested=IntField(), default=lambda: {}).validate_it(None)
         assert value == {}
 
         value['a'] = 1
 
-        error, value = DictField(children_field=IntField(), default=lambda: {}).validate_it(None)
+        error, value = DictField(nested=IntField(), default=lambda: {}).validate_it(None)
         assert value == {}
 
-        error, value = DictField(children_field=IntField(), default=lambda: self._first).validate_it(self._second)
+        error, value = DictField(nested=IntField(), default=lambda: self._first).validate_it(self._second)
         assert value == self._as_second
 
     def test_default_callable_required(self):
         error, value = DictField(
-            children_field=IntField(), default=lambda: self._first, required=True
+            nested=IntField(), default=lambda: self._first, required=True
         ).validate_it(None)
         assert not error
         assert value == self._as_first
 
     def test_wrong_type(self):
-        error, value = DictField(children_field=IntField()).validate_it(1.0)
+        error, value = DictField(nested=IntField()).validate_it(1.0)
         assert error
 
     def test_only(self):
-        error, value = DictField(children_field=IntField(), only=[self._first, self._second]).validate_it(self._third)
+        error, value = DictField(nested=IntField(), only=[self._first, self._second]).validate_it(self._third)
         assert error
 
         error, value = DictField(
-            children_field=IntField(), only=[self._first, self._second]
+            nested=IntField(), only=[self._first, self._second]
         ).validate_it(self._as_first)
         assert not error
 
     def test_only_callable(self):
         error, value = DictField(
-            children_field=IntField(), only=lambda: [self._first, self._second]
+            nested=IntField(), only=lambda: [self._first, self._second]
         ).validate_it(self._third)
         assert error
 
         error, value = DictField(
-            children_field=IntField(), only=lambda: [self._first, self._second]
+            nested=IntField(), only=lambda: [self._first, self._second]
         ).validate_it(self._as_first)
         assert not error
 
@@ -653,7 +653,7 @@ class DictFieldTestCase(TestCase):
         pass
 
     def test_convert(self):
-        error, value = DictField(children_field=IntField()).validate_it({'a': '1', 'b': 2.0}, convert=True)
+        error, value = DictField(nested=IntField()).validate_it({'a': '1', 'b': 2.0}, convert=True)
         assert not error
         assert value == {'a': 1, 'b': 2}
 

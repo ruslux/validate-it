@@ -41,7 +41,7 @@ pip install validate-it
 * ``ListField``
     ```python
     errors, value = ListField(
-        children_field=IntField()
+        nested=IntField()
     ).validate_it([1, 2, 3, 4])
 
     assert value == [1, 2, 3, 4]
@@ -50,7 +50,7 @@ pip install validate-it
 * ``TupleField``
     ```python
     errors, value = TupleField(
-        elemetns=(
+        nested=(
             IntField(),
             FloatField(),
             StrField()
@@ -63,7 +63,7 @@ pip install validate-it
 * ``DictField``
     ```python
     errors, value = DictField(
-        children_field=IntField()
+        nested=IntField()
     ).validate_it({'a': 1, 'b': 2, 'c': 3})
 
     assert value == {'a': 1, 'b': 2, 'c': 3}
@@ -101,26 +101,84 @@ pip install validate-it
 
 
 ### <a name="kwargs"/>Keyword arguments</a>
-All fields:
+#### All fields:
 * ``required`` - value is required (default is ``False``)
+```python
+a = IntField(required=True)
+b = IntField(required=False)
+```
 * ``only`` - list of available values (can be callable, default allow any)
+```python
+a = IntField(only=[1, 2, 3])
+b = IntField(only=lambda: range(0, 100))
+```
 * ``default`` - set default if value is ``None`` (can be callable, default is ``None``)
+```python
+a = IntField(default=1)
+b = IntField(default=lambda: 1 + 1)
+```
 * ``validators`` - list of custom callable validators
-
-StrField, ListField:
+```python
+a = IntField(
+    validators=[
+        lambda value, *_: 0 < value < 10,
+        lambda value, *_: value % 2,
+    ]
+)
+```
+#### StrField, ListField:
 * ``min_length`` - minimal sequence length (default is ``None``)
+```python
+a = StrField(min_length=2)
+```
 * ``max_length`` - maximum sequence length (default is ``None``)
+```python
+a = ListField(max_length=2)
+```
+#### ListField, DictField:
+* ``nested`` - required ``Validator`` subclass for value
+```python
+a = ListField(nested=IntField())
+```
 
-ListField, DictField:
-* ``children_field`` - required ``Validator`` subclass for value
+#### TupleField:
+* ``nested`` - tuple of ``Validator`` subclasses
+```python
+a = TupleField(
+    nested=(
+        IntField(),
+        IntField(),
+        StrField(),
+    )
+)
 
-TupleField:
-* ``elements`` - tuple of ``Validator`` subclasses
+# aliases
+class HeaderSize(IntField):
+    pass
 
-IntField, FloatField:
+class Header(StrField):
+    pass
+
+class Message(TupleField):
+    pass
+
+b = Message(
+    nested=(
+        HeaderSize(),
+        Header()
+    )
+)
+```
+
+#### IntField, FloatField:
 * ``min_value``
+```python
+a = IntField(min_value=2)
+```
 * ``max_value``
-
+```python
+a = IntField(max_value=2)
+```
 
 
 ### <a name="example"/>Example</a>
@@ -131,8 +189,8 @@ from validate_it import *
 class Owner(Schema):
     first_name = StrField(required=True)
     last_name = StrField(required=True)
-    
-    
+
+
 class Characteristics(Schema):
     cc = FloatField(required=True, min_value=0.0)
     hp = IntField(required=True, min_value=0)
@@ -140,7 +198,7 @@ class Characteristics(Schema):
 
 class Car(Schema):
     name = StrField(required=True, min_length=2, max_length=20)
-    owners = ListField(required=True, children_field=Owner())
+    owners = ListField(required=True, nested=Owner())
     characteristics = Characteristics(required=True, default={"cc": 0.0, "hp": 0})
     convert = BoolField(required=True)
 
