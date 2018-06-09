@@ -8,9 +8,8 @@ class AnyType(StrictType):
     """
     Поле, для которого любое значение считается правильным.
     """
+
     _base_type = object
 
 
-__all__ = [
-    'AnyType'
-]
+__all__ = ["AnyType"]

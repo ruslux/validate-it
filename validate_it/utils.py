@@ -81,4 +81,3 @@ class _OneOfValidator(object):
 
 def one_of(_list):
     return _OneOfValidator(_list)
-

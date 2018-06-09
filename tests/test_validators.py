@@ -8,7 +8,7 @@ def is_email(value, convert, strip_unknown):
     if not re.match(r"[^@]+@[^@]+\.[^@]+", value):
         return "Invalid email", value
 
-    return '', value
+    return "", value
 
 
 class TestValidators(TestCase):

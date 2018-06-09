@@ -23,9 +23,7 @@ class StrictType(Validator):
                     f"when `only` defined"
                 )
             if self._default not in self._only:
-                raise ValueError(
-                    f"Field {self._field_name} improperly configured: `default` parameter not in `only` "
-                )
+                raise ValueError(f"Field {self._field_name} improperly configured: `default` parameter not in `only` ")
 
         for _validator in self._validators:
             for _item in self._only:
@@ -46,28 +44,20 @@ class StrictType(Validator):
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
 
-        _data['required'] = self._required
+        _data["required"] = self._required
 
         if self._description:
-            _data['description'] = self._description
+            _data["description"] = self._description
 
         if self._only and callable(self._only):
-            _data['only'] = {
-                'type': 'callable',
-                'example': self._only(),
-                'callable': self._only
-            }
+            _data["only"] = {"type": "callable", "example": self._only(), "callable": self._only}
         elif self._only:
-            _data['only'] = self._only
+            _data["only"] = self._only
 
         if self._default and callable(self._default):
-            _data['default'] = {
-                'type': 'callable',
-                'example': self._default(),
-                'callable': self._default
-            }
+            _data["default"] = {"type": "callable", "example": self._default(), "callable": self._default}
         elif self._default:
-            _data['default'] = self._default
+            _data["default"] = self._default
 
         return _data
 
@@ -98,20 +88,20 @@ class StrictType(Validator):
             else:
                 value = self._default
 
-        return '', value
+        return "", value
 
     def validate_required(self, value, convert, strip_unknown) -> typing.Tuple[str, typing.Any]:
         if self._required and value is None:
             return "Value is required", value
 
-        return '', value
+        return "", value
 
     def validate_type(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
         if type(value) not in (self._base_type,) and convert:
             value = self.convert(value)
 
         if isinstance(value, self._base_type):
-            return '', value
+            return "", value
 
         return "Wrong type", value
 
@@ -130,7 +120,7 @@ class StrictType(Validator):
         return {}, value
 
     def apply_validators(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
-        _error = ''
+        _error = ""
 
         for validator in self._validators:
             _error, value = validator(value, convert, strip_unknown)
@@ -179,10 +169,10 @@ class __Number(AmountMixin, StrictType):
         _data = super().representation(**kwargs)
 
         if self._max_value:
-            _data['max_value'] = self._max_value
+            _data["max_value"] = self._max_value
 
         if self._min_value:
-            _data['min_value'] = self._min_value
+            _data["min_value"] = self._min_value
 
         return _data
 
@@ -244,10 +234,10 @@ class StrField(LengthMixin, StrictType):
         _data = super().representation(**kwargs)
 
         if self._max_length:
-            _data['max_length'] = self._max_length
+            _data["max_length"] = self._max_length
 
         if self._min_length:
-            _data['min_length'] = self._min_length
+            _data["min_length"] = self._min_length
 
         return _data
 
@@ -308,13 +298,13 @@ class ListField(LengthMixin, StrictType):
         _data = super().representation(**kwargs)
 
         if self._max_length:
-            _data['max_length'] = self._max_length
+            _data["max_length"] = self._max_length
 
         if self._min_length:
-            _data['min_length'] = self._min_length
+            _data["min_length"] = self._min_length
 
         if self._nested:
-            _data['nested'] = self._nested.representation(**kwargs)
+            _data["nested"] = self._nested.representation(**kwargs)
 
         return _data
 
@@ -364,13 +354,13 @@ class TupleField(StrictType):
 
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
-        _data['nested'] = [_field.representation(**kwargs) for _field in self._nested]
+        _data["nested"] = [_field.representation(**kwargs) for _field in self._nested]
 
         return _data
 
     def validate_length(self, value, convert, strip_unknown) -> typing.Tuple[str, typing.Any]:
         if len(value) == len(self._nested):
-            return '', value
+            return "", value
         else:
             return "Tuple length does not match with value length", value
 
@@ -436,7 +426,7 @@ class DictField(StrictType):
         _data = super().representation(**kwargs)
 
         if self._nested:
-            _data['nested'] = self._nested.representation(**kwargs)
+            _data["nested"] = self._nested.representation(**kwargs)
 
         return _data
 
@@ -491,6 +481,7 @@ class Schema(StrictType):
 
     Все доступные поля описаны в модуле ``validation.field`` и несколько полей в ``api.field``
     """
+
     _base_type = dict
     _cached_fields = {}
     _default = attr.ib(default=None, validator=[is_none_or_instance_of(dict)])
@@ -498,11 +489,11 @@ class Schema(StrictType):
 
     @classmethod
     def get_singleton_name(cls, *args, **kwargs):
-        return cls.__name__ + '_' + str(cls.get_fields()) + '_' + str(kwargs)
+        return cls.__name__ + "_" + str(cls.get_fields()) + "_" + str(kwargs)
 
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
-        _data['schema'] = {x: y.representation(**kwargs) for x, y in self.get_fields().items()}
+        _data["schema"] = {x: y.representation(**kwargs) for x, y in self.get_fields().items()}
         return _data
 
     @classmethod
@@ -568,15 +559,15 @@ SchemaField = Schema
 
 
 __all__ = [
-    'StrictType',
-    'BoolField',
-    'IntField',
-    'FloatField',
-    'StrField',
-    'ListField',
-    'TupleField',
-    'DictField',
-    'DatetimeField',
-    'Schema',
-    'SchemaField',
+    "StrictType",
+    "BoolField",
+    "IntField",
+    "FloatField",
+    "StrField",
+    "ListField",
+    "TupleField",
+    "DictField",
+    "DatetimeField",
+    "Schema",
+    "SchemaField",
 ]

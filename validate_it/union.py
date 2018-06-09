@@ -22,6 +22,7 @@ class UnionType(Validator):
             ]
 
     """
+
     _alternatives = attr.ib(
         default=attr.Factory(list), validator=[attr.validators.instance_of(list), list_of(Validator), not_empty]
     )
@@ -29,7 +30,7 @@ class UnionType(Validator):
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
 
-        _data['one of'] = [x.representation(**kwargs) for x in self._alternatives]
+        _data["one of"] = [x.representation(**kwargs) for x in self._alternatives]
 
         return _data
 
@@ -47,6 +48,4 @@ class UnionType(Validator):
         return _errors, value
 
 
-__all__ = [
-    'UnionType'
-]
+__all__ = ["UnionType"]
