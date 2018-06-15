@@ -503,7 +503,7 @@ class Schema(StrictType):
     @classmethod
     def only_fields(cls, *args: typing.List[str]):
         """
-        Создает копию схемы, в которую включены только поля перечисленные в ``*args``
+        Clone schema with only fields described in ``*args``
 
         :param args: List[str]
         :return: cls
@@ -515,12 +515,25 @@ class Schema(StrictType):
     @classmethod
     def exclude_fields(cls, *args: typing.List[str]):
         """
-        Создает копию схемы без полей перечисленных в ``*args``
+        Clone schema with excluding fields described in ``*args``
 
         :param args: List[str]
         :return: cls
         """
         _new = {k: v for k, v in cls.get_fields().items() if k not in args}
+
+        return type(cls.__name__, cls.__bases__, _new)
+
+    @classmethod
+    def add_fields(cls, **kwargs):
+        """
+        Add some fields to schema
+        :param kwargs: Dict[Validator]
+        :return:
+        """
+        _new = {k: v for k, v in cls.get_fields().items()}
+
+        _new.update(kwargs)
 
         return type(cls.__name__, cls.__bases__, _new)
 

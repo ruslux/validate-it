@@ -16,8 +16,11 @@ class Fourth(Schema):
     a = StrField()
 
 
+Fifth = Fourth().add_fields(_id=IntField(default=12))
+
+
 class TestClone(TestCase):
-    def test_clone_only(self):
+    def test_clone(self):
         _data = {"a": 1, "b": 2}
 
         _error, _validated = First().validate_it(_data)
@@ -39,3 +42,7 @@ class TestClone(TestCase):
 
         assert not _error
         self.assertEquals({"a": "1"}, _validated)
+
+        _error, _validated = Fifth().validate_it(_data, convert=True, strip_unknown=True)
+        assert not _error
+        self.assertEquals({"a": "1", "_id": 12}, _validated)
