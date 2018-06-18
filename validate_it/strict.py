@@ -501,7 +501,7 @@ class Schema(StrictType):
         return {k: v for k, v in cls.__dict__.items() if isinstance(v, Validator)}
 
     @classmethod
-    def only_fields(cls, *args: typing.List[str]):
+    def only_fields(cls, *args: str):
         """
         Clone schema with only fields described in ``*args``
 
@@ -513,7 +513,7 @@ class Schema(StrictType):
         return type(cls.__name__, cls.__bases__, _new)
 
     @classmethod
-    def exclude_fields(cls, *args: typing.List[str]):
+    def exclude_fields(cls, *args: str):
         """
         Clone schema with excluding fields described in ``*args``
 
