@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = "0.2.9"
+version = "0.2.10"
 
 setup(
     name="validate-it",
@@ -14,21 +14,22 @@ setup(
     download_url="https://github.com/ruslux/validate_it/archive/{}.tar.gz".format(version),
     keywords=["schema", "validator", "json"],
     classifiers=[],
-    python_requires='>3.6.0',
-    platforms=['OS Independent'],
-    license='LICENSE.txt',
+    python_requires=">3.6.0",
+    platforms=["OS Independent"],
+    license="LICENSE.txt",
     install_requires=[
-        'attrs (==17.4.0)'
+        "attrs (==17.4.0)"
     ],
     extras_require={
-        'tests': [
-            'pytest (==3.4.0)',
-            'coverage (==4.5)',
-            'pytest-cov (==2.5.1)',
+        "tests": [
+            "pytest (==3.4.0)",
+            "coverage (==4.5)",
+            "pytest-cov (==2.5.1)",
+            "dotmap (==1.2.20)",
         ],
-        'docs': [
-            'sphinx >= 1.4',
-            'aiohttp_theme'
+        "docs": [
+            "sphinx >= 1.4",
+            "aiohttp_theme"
         ]
     }
 )

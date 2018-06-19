@@ -542,7 +542,8 @@ class Schema(StrictType):
 
         _value_keys = set(value.keys())
         _schema_keys = set()
-        _copy = {}
+
+        _copy = value.__class__()
 
         for _name, _field in self.get_fields().items():
             _check = value.get(_field._alias) if _field._alias else value.get(_name)

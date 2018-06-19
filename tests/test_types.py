@@ -1,6 +1,8 @@
 from datetime import datetime
 from unittest import TestCase
 
+from dotmap import DotMap
+
 from validate_it import *
 
 
@@ -887,3 +889,13 @@ class SchemaTestCase(TestCase):
         error, value = A().validate_it({"b": 1}, strip_unknown=True)
         assert not error
         assert value == {"c": 1}
+
+    def test_dot_map(self):
+        class A(Schema):
+            a = IntField(required=True, alias="b", rename="c")
+
+        _data = DotMap({"b": 1})
+
+        error, value = A().validate_it(_data, strip_unknown=True)
+        assert not error
+        assert value.c == 1
