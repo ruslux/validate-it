@@ -1,7 +1,7 @@
 from datetime import datetime
 from unittest import TestCase
 
-from dotmap import DotMap
+from box import Box
 
 from validate_it import *
 
@@ -894,7 +894,7 @@ class SchemaTestCase(TestCase):
         class A(Schema):
             a = IntField(required=True, alias="b", rename="c")
 
-        _data = DotMap({"b": 1})
+        _data = Box({"b": 1})
 
         error, value = A().validate_it(_data, strip_unknown=True)
         assert not error

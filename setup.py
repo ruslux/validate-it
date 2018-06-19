@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-version = "0.2.10"
+version = "0.2.11"
 
 setup(
     name="validate-it",
@@ -25,7 +25,7 @@ setup(
             "pytest (==3.4.0)",
             "coverage (==4.5)",
             "pytest-cov (==2.5.1)",
-            "dotmap (==1.2.20)",
+            "python-box (==3.2.0)",
         ],
         "docs": [
             "sphinx >= 1.4",
