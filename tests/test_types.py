@@ -896,6 +896,6 @@ class SchemaTestCase(TestCase):
 
         _data = Box({"b": 1})
 
-        error, value = A().validate_it(_data, strip_unknown=True)
+        error, value = A().validate_it(_data, strip_unknown=True, convert=True)
         assert not error
         assert value.c == 1

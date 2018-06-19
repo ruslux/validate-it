@@ -97,7 +97,10 @@ class StrictType(Validator):
         return "", value
 
     def validate_type(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
-        if type(value) not in (self._base_type,) and convert:
+        if not isinstance(value, self._base_type) and convert:
+            value = self.convert(value)
+
+        if self._base_type is int and isinstance(value, bool) and convert:
             value = self.convert(value)
 
         if isinstance(value, self._base_type):
