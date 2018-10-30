@@ -7,3 +7,4 @@ sphinx-autobuild
 aiohttp_theme
 sphinx-intl
 dotmap==1.2.20
+python-box

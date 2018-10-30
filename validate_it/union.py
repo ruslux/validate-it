@@ -1,12 +1,10 @@
-from typing import Tuple
-
-import attr
+from dataclasses import field, dataclass
+from typing import Tuple, List
 
 from validate_it.base import Validator
-from validate_it.utils import list_of, not_empty
 
 
-@attr.s(slots=True)
+@dataclass
 class UnionType(Validator):
     """
     Схема для которой можно задать несколько допустимых типов.
@@ -23,21 +21,23 @@ class UnionType(Validator):
 
     """
 
-    _alternatives = attr.ib(
-        default=attr.Factory(list), validator=[attr.validators.instance_of(list), list_of(Validator), not_empty]
-    )
+    alternatives: List[Validator] = field(default_factory=list)
+
+    def __post_init__(self):
+        if not len(self.alternatives):
+            raise ValueError(f"UnionType `alternatives` must be not empty")
 
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
 
-        _data["one of"] = [x.representation(**kwargs) for x in self._alternatives]
+        _data["one of"] = [x.representation(**kwargs) for x in self.alternatives]
 
         return _data
 
     def validate_it(self, value, convert=False, strip_unknown=False) -> Tuple[dict, dict]:
         _errors = {}
 
-        for _alternative in self._alternatives:
+        for _alternative in self.alternatives:
             _error, _value = _alternative.validate_it(value, convert, strip_unknown)
 
             if not _error:

@@ -1,0 +1,11 @@
+version: '2'
+
+services:
+  test:
+    image: test
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - "./:/var/validate_it/"
+    command: bash -c "coverage run --source='./validate_it/' -m pytest tests -vv && coverage combine && coverage report"

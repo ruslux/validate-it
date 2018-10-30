@@ -1,67 +1,65 @@
 import collections
-import typing
+from dataclasses import dataclass, field
 from datetime import datetime
-
-import attr
+from typing import Union, List, Callable, Tuple, Any, Type, Dict
 
 from validate_it.base import Validator
-from validate_it.utils import is_none_or_instance_of, is_callable_or_instance_of
 
 
-@attr.s(slots=True)
+@dataclass
 class StrictType(Validator):
-    _required = attr.ib(default=False, validator=[attr.validators.instance_of(bool)])
-    _default = attr.ib(default=None, validator=[is_none_or_instance_of(object)])
-    _only = attr.ib(default=attr.Factory(list), validator=[is_callable_or_instance_of(list)])
-    _validators = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(collections.Iterable)])
+    required: bool = False
+    default: Union[object, None] = None
+    only: Union[Callable, list] = field(default_factory=list)
+    validators: List[Callable] = field(default_factory=list)
 
-    def __attrs_post_init__(self):
-        if self._only and self._default is not None:
-            if callable(self._default):
+    def __post_init__(self):
+        if self.only and self.default is not None:
+            if callable(self.default):
                 raise TypeError(
-                    f"Field {self._field_name} improperly configured: `default` parameter does not allow `callable` "
+                    f"Field {self.field_name} improperly configured: `default` parameter does not allow `callable` "
                     f"when `only` defined"
                 )
-            if self._default not in self._only:
-                raise ValueError(f"Field {self._field_name} improperly configured: `default` parameter not in `only` ")
+            if self.default not in self.only:
+                raise ValueError(f"Field {self.field_name} improperly configured: `default` parameter not in `only` ")
 
-        for _validator in self._validators:
-            for _item in self._only:
+        for _validator in self.validators:
+            for _item in self.only:
                 _validate_it, _error, _value = _validator(_item, False, False)
                 if _error:
                     raise ValueError(
-                        f"Field {self._field_name} improperly configured: `only` value {_item} does not pass defined "
+                        f"Field {self.field_name} improperly configured: `only` value {_item} does not pass defined "
                         f"`validator` {_validator}"
                     )
 
-            if self._default is not None:
-                _default = self._default() if callable(self._default) else self._default
+            if self.default is not None:
+                _default = self.default() if callable(self.default) else self.default
                 raise ValueError(
-                    f"Field {self._field_name} improperly configured: `default` value {_default} does not pass defined "
+                    f"Field {self.field_name} improperly configured: `default` value {_default} does not pass defined "
                     f"`validator` {_validator}"
                 )
 
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
 
-        _data["required"] = self._required
+        _data["required"] = self.required
 
-        if self._description:
-            _data["description"] = self._description
+        if self.description:
+            _data["description"] = self.description
 
-        if self._only and callable(self._only):
-            _data["only"] = {"type": "callable", "example": self._only(), "callable": self._only}
-        elif self._only:
-            _data["only"] = self._only
+        if self.only and callable(self.only):
+            _data["only"] = {"type": "callable", "example": self.only(), "callable": self.only}
+        elif self.only:
+            _data["only"] = self.only
 
-        if self._default and callable(self._default):
-            _data["default"] = {"type": "callable", "example": self._default(), "callable": self._default}
-        elif self._default:
-            _data["default"] = self._default
+        if self.default and callable(self.default):
+            _data["default"] = {"type": "callable", "example": self.default(), "callable": self.default}
+        elif self.default:
+            _data["default"] = self.default
 
         return _data
 
-    def validate_it(self, value, convert=False, strip_unknown=False) -> typing.Tuple[typing.Any, typing.Any]:
+    def validate_it(self, value, convert=False, strip_unknown=False) -> Tuple[Any, Any]:
         _error, value = self.set_defaults(value, convert, strip_unknown)
 
         if not _error:
@@ -81,174 +79,174 @@ class StrictType(Validator):
 
         return _error, value
 
-    def set_defaults(self, value, convert, strip_unknown) -> typing.Tuple[str, typing.Any]:
-        if value is None and self._default is not None:
-            if callable(self._default):
-                value = self._default()
+    def set_defaults(self, value, convert, strip_unknown) -> Tuple[str, Any]:
+        if value is None and self.default is not None:
+            if callable(self.default):
+                value = self.default()
             else:
-                value = self._default
+                value = self.default
 
         return "", value
 
-    def validate_required(self, value, convert, strip_unknown) -> typing.Tuple[str, typing.Any]:
-        if self._required and value is None:
+    def validate_required(self, value, convert, strip_unknown) -> Tuple[str, Any]:
+        if self.required and value is None:
             return "Value is required", value
 
         return "", value
 
-    def validate_type(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
-        if not isinstance(value, self._base_type) and convert:
+    def validate_type(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
+        if not isinstance(value, self.base_type) and convert:
             value = self.convert(value)
 
-        if self._base_type is int and isinstance(value, bool) and convert:
+        if self.base_type is int and isinstance(value, bool) and convert:
             value = self.convert(value)
 
-        if isinstance(value, self._base_type):
+        if isinstance(value, self.base_type):
             return "", value
 
         return "Wrong type", value
 
-    def validate_only(self, value) -> typing.Tuple[str, typing.Any]:
-        only = self._only
+    def validate_only(self, value) -> Tuple[str, Any]:
+        only = self.only
 
-        if callable(self._only):
-            only = self._only()
+        if callable(self.only):
+            only = self.only()
 
         if only and value not in only:
             return f"Value must belong to `{only}`", value
         else:
             return "", value
 
-    def validate_other(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
+    def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
         return {}, value
 
-    def apply_validators(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
+    def apply_validators(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
         _error = ""
 
-        for validator in self._validators:
+        for validator in self.validators:
             _error, value = validator(value, convert, strip_unknown)
 
         return _error, value
 
     def convert(self, value):
         try:
-            value = self._base_type(value)
+            value = self.base_type(value)
         except Exception:
             pass
 
         return value
 
 
-@attr.s(slots=True)
+@dataclass
 class BoolField(StrictType):
     """
     Поле для значений типа ``bool``
     """
 
-    _base_type = bool
-    _default = attr.ib(default=None, validator=[is_none_or_instance_of(bool)])
+    base_type: Type = bool
+    default: Union[bool, None] = None
 
 
-@attr.s
+@dataclass
 class AmountMixin(object):
-    _min_value = attr.ib()
-    _max_value = attr.ib()
+    min_value: Union[Any, None] = None
+    max_value: Union[Any, None] = None
 
-    def validate_amount(self, value) -> typing.Tuple[typing.Union[typing.Any, str], typing.Any]:
-        if self._min_value is not None:
-            if value < self._min_value:
-                return f"Value must be greater than `{self._min_value}`", value
+    def validate_amount(self, value) -> Tuple[Union[Any, str], Any]:
+        if self.min_value is not None:
+            if value < self.min_value:
+                return f"Value must be greater than `{self.min_value}`", value
 
-        if self._max_value is not None:
-            if value > self._max_value:
-                return f"Value must be lesser than `{self._max_value}`", value
+        if self.max_value is not None:
+            if value > self.max_value:
+                return f"Value must be lesser than `{self.max_value}`", value
 
         return {}, value
 
 
-@attr.s(slots=True)
+@dataclass
 class __Number(AmountMixin, StrictType):
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
 
-        if self._max_value:
-            _data["max_value"] = self._max_value
+        if self.max_value:
+            _data["max_value"] = self.max_value
 
-        if self._min_value:
-            _data["min_value"] = self._min_value
+        if self.min_value:
+            _data["min_value"] = self.min_value
 
         return _data
 
-    def validate_other(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
+    def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
         return self.validate_amount(value)
 
 
-@attr.s(slots=True)
+@dataclass
 class IntField(__Number):
     """
     Поле для значений типа ``int``
     """
 
-    _base_type = int
-    _default = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
-    _min_value = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
-    _max_value = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
+    base_type: Type = int
+    default: Union[int, None] = None
+    min_value: Union[int, None] = None
+    max_value: Union[int, None] = None
 
 
-@attr.s(slots=True)
+@dataclass
 class FloatField(__Number):
     """
     Поле для значений типа ``float``
     """
 
-    _base_type = float
-    _default = attr.ib(default=None, validator=[is_none_or_instance_of(float)])
-    _min_value = attr.ib(default=None, validator=[is_none_or_instance_of(float)])
-    _max_value = attr.ib(default=None, validator=[is_none_or_instance_of(float)])
+    base_type: Type = float
+    default: Union[float, None] = None
+    min_value: Union[float, None] = None
+    max_value: Union[float, None] = None
 
 
-@attr.s
+@dataclass
 class LengthMixin(object):
-    _min_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
-    _max_length = attr.ib(default=None, validator=[is_none_or_instance_of(int)])
+    min_length: Union[int, None] = None
+    max_length: Union[int, None] = None
 
-    def validate_length(self, value) -> typing.Tuple[typing.Union[typing.Any, str], typing.Any]:
-        if self._min_length is not None:
-            if len(value) < self._min_length:
-                return f"Value length must be greater than `{self._min_length}`", value
+    def validate_length(self, value) -> Tuple[Union[Any, str], Any]:
+        if self.min_length is not None:
+            if len(value) < self.min_length:
+                return f"Value length must be greater than `{self.min_length}`", value
 
-        if self._max_length is not None:
-            if len(value) > self._max_length:
-                return f"[Value length must be lesser than `{self._max_length}`", value
+        if self.max_length is not None:
+            if len(value) > self.max_length:
+                return f"[Value length must be lesser than `{self.max_length}`", value
 
         return {}, value
 
 
-@attr.s(slots=True)
+@dataclass
 class StrField(LengthMixin, StrictType):
     """
     Поле для значений типа ``str``
     """
 
-    _base_type = str
-    _default = attr.ib(default=None, validator=[is_none_or_instance_of(str)])
+    base_type: Type = str
+    default: Union[str, None] = None
 
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
 
-        if self._max_length:
-            _data["max_length"] = self._max_length
+        if self.max_length:
+            _data["max_length"] = self.max_length
 
-        if self._min_length:
-            _data["min_length"] = self._min_length
+        if self.min_length:
+            _data["min_length"] = self.min_length
 
         return _data
 
-    def validate_other(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
+    def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
         return self.validate_length(value)
 
 
-@attr.s(slots=True)
+@dataclass
 class ListField(LengthMixin, StrictType):
     """
     Поле для значений типа ``list``, который хранит в себе значения типа указанного в ``children_type``
@@ -271,16 +269,16 @@ class ListField(LengthMixin, StrictType):
 
     """
 
-    _base_type = list
-    _default = attr.ib(default=None, validator=[is_none_or_instance_of(list)])
-    _nested = attr.ib(default=None, validator=[is_none_or_instance_of(Validator)])
+    base_type: Type = list
+    default: Union[List[Any], None] = None
+    nested: Union[Validator, None] = None
 
-    def validate_items(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
+    def validate_items(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
         _errors = {}
 
         if value:
             for _index, _item in enumerate(value):
-                _item_error, _item = self._nested.validate_it(_item, convert, strip_unknown)
+                _item_error, _item = self.nested.validate_it(_item, convert, strip_unknown)
 
                 if _item_error:
                     _errors[_index] = _item_error
@@ -289,7 +287,7 @@ class ListField(LengthMixin, StrictType):
 
         return _errors, value
 
-    def validate_other(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
+    def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
         _error, value = self.validate_length(value)
 
         if not _error:
@@ -300,14 +298,14 @@ class ListField(LengthMixin, StrictType):
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
 
-        if self._max_length:
-            _data["max_length"] = self._max_length
+        if self.max_length:
+            _data["max_length"] = self.max_length
 
-        if self._min_length:
-            _data["min_length"] = self._min_length
+        if self.min_length:
+            _data["min_length"] = self.min_length
 
-        if self._nested:
-            _data["nested"] = self._nested.representation(**kwargs)
+        if self.nested:
+            _data["nested"] = self.nested.representation(**kwargs)
 
         return _data
 
@@ -318,7 +316,7 @@ class ListField(LengthMixin, StrictType):
         return super().convert(value)
 
 
-@attr.s(slots=True)
+@dataclass
 class TupleField(StrictType):
     """
     Поле для значений типа ``tuple``, который хранит в себе значения, которые строго соответсвуют порядку полей,
@@ -346,34 +344,34 @@ class TupleField(StrictType):
 
     """
 
-    _base_type = tuple
-    _default = attr.ib(default=None, validator=[is_none_or_instance_of(tuple)])
-    _nested = attr.ib(default=attr.Factory(list), validator=[attr.validators.instance_of(list)])
+    base_type: Type = tuple
+    default: Union[tuple, None] = None
+    nested: List[Validator] = field(default_factory=list)
 
-    def __attrs_post_init__(self):
-        for _element in self._nested:
+    def __post_init__(self):
+        for _element in self.nested:
             if not isinstance(_element, Validator):
                 raise TypeError(f"`nested` element must be `field.Validator` instance")
 
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
-        _data["nested"] = [_field.representation(**kwargs) for _field in self._nested]
+        _data["nested"] = [_field.representation(**kwargs) for _field in self.nested]
 
         return _data
 
-    def validate_length(self, value, convert, strip_unknown) -> typing.Tuple[str, typing.Any]:
-        if len(value) == len(self._nested):
+    def validate_length(self, value, convert, strip_unknown) -> Tuple[str, Any]:
+        if len(value) == len(self.nested):
             return "", value
         else:
             return "Tuple length does not match with value length", value
 
-    def validate_items(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
+    def validate_items(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
         _errors = {}
 
         value = list(value)
 
         if value:
-            for _index, _field in enumerate(self._nested):
+            for _index, _field in enumerate(self.nested):
                 _item = value[_index]
                 _item_error, _item = _field.validate_it(_item, convert, strip_unknown)
 
@@ -384,8 +382,8 @@ class TupleField(StrictType):
 
         return _errors, tuple(value)
 
-    def validate_other(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
-        if not self._nested:
+    def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
+        if not self.nested:
             return {}, value
 
         _error, value = self.validate_length(value, convert, strip_unknown)
@@ -396,7 +394,7 @@ class TupleField(StrictType):
         return _error, value
 
 
-@attr.s(slots=True)
+@dataclass
 class DictField(StrictType):
     """
     Поле для значений типа ``dict``, который хранит в себе значения типа указанного в ``children_type``.
@@ -421,25 +419,25 @@ class DictField(StrictType):
 
     """
 
-    _base_type = dict
-    _default = attr.ib(default=None, validator=[is_none_or_instance_of(dict)])
-    _nested = attr.ib(default=None, validator=[is_none_or_instance_of(Validator)])
+    base_type: Type = dict
+    default: Union[Callable, Dict[str, Validator], None] = None
+    nested: Union[Validator, None] = None
 
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
 
-        if self._nested:
-            _data["nested"] = self._nested.representation(**kwargs)
+        if self.nested:
+            _data["nested"] = self.nested.representation(**kwargs)
 
         return _data
 
-    def validate_other(self, value, convert, strip_unknown) -> typing.Tuple[typing.Any, typing.Any]:
+    def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
         _errors = {}
 
         if value:
             for _key, _value in value.items():
-                self._nested._field_name = self._field_name
-                _item_error, _value = self._nested.validate_it(_value, convert, strip_unknown)
+                self.nested.field_name = self.field_name
+                _item_error, _value = self.nested.validate_it(_value, convert, strip_unknown)
 
                 if _item_error:
                     _errors[_key] = _item_error
@@ -449,17 +447,17 @@ class DictField(StrictType):
         return _errors, value
 
 
-@attr.s(slots=True)
+@dataclass
 class DatetimeField(StrictType):
     """
     Поле для значений типа ``datetime``
     """
 
-    _base_type = datetime
-    _default = attr.ib(default=None, validator=[is_none_or_instance_of(datetime)])
+    base_type: Type = datetime
+    default: Union[datetime, None] = None
 
 
-@attr.s(slots=True)
+@dataclass
 class Schema(StrictType):
     """
     Наряду с ``AnySchema`` класс ``Schema`` является основным инструментом для валидации документов.
@@ -485,10 +483,9 @@ class Schema(StrictType):
     Все доступные поля описаны в модуле ``validation.field`` и несколько полей в ``api.field``
     """
 
-    _base_type = dict
-    _cached_fields = {}
-    _default = attr.ib(default=None, validator=[is_none_or_instance_of(dict)])
-    _required = attr.ib(default=True, validator=[attr.validators.instance_of(bool)])
+    base_type: Type = dict
+    default: Union[Callable, dict, None] = None
+    required: bool = True
 
     @classmethod
     def get_singleton_name(cls, *args, **kwargs):
@@ -540,7 +537,7 @@ class Schema(StrictType):
 
         return type(cls.__name__, cls.__bases__, _new)
 
-    def validate_other(self, value, convert=False, strip_unknown=False) -> typing.Tuple[typing.Any, typing.Any]:
+    def validate_other(self, value, convert=False, strip_unknown=False) -> Tuple[Any, Any]:
         _errors = {}
 
         _value_keys = set(value.keys())
@@ -549,7 +546,7 @@ class Schema(StrictType):
         _copy = value.__class__()
 
         for _name, _field in self.get_fields().items():
-            _check = value.get(_field._alias) if _field._alias else value.get(_name)
+            _check = value.get(_field.alias) if _field.alias else value.get(_name)
 
             _error, _value = _field.validate_it(_check, convert, strip_unknown)
 
@@ -558,8 +555,8 @@ class Schema(StrictType):
             elif _value is None:
                 continue
 
-            if _field._rename:
-                _copy[_field._rename] = _value
+            if _field.rename:
+                _copy[_field.rename] = _value
             else:
                 _copy[_name] = _value
 
