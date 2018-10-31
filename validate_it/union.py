@@ -1,11 +1,12 @@
 from dataclasses import field, dataclass
 from typing import Tuple, List
 
+from validate_it.strict import StrictType
 from validate_it.base import Validator
 
 
 @dataclass
-class UnionType(Validator):
+class UnionType(StrictType):
     """
     Схема для которой можно задать несколько допустимых типов.
 

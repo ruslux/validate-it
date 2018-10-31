@@ -104,4 +104,5 @@ class TestClone(TestCase):
                 {"base_type": "int", "required": False, "end": True, "extended_type": "IntField"},
                 {"base_type": "float", "required": False, "end": True, "extended_type": "FloatField"},
             ],
+            "required": False,
         }
