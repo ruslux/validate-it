@@ -1,3 +1,5 @@
+import inspect
+from pprint import pprint
 from unittest import TestCase
 
 from validate_it import *
@@ -106,3 +108,200 @@ class TestClone(TestCase):
             ],
             "required": False,
         }
+
+    def test_mozilla_react_jsonschema_form(self):
+
+        class Aspect:
+            FIRE = 1
+            WATER = 2
+            EARTH = 3
+            AIR = 4
+
+        class Skill(Schema):
+            title = StrField(min_length=3, max_length=32, required=True, jsonschema_options={"title": "Title"})
+            power = FloatField(min_value=0.1, max_value=100.0, required=True, jsonschema_options={"title": "Power"})
+            aspect = IntField(choices=Aspect, required=True, jsonschema_options={"title": "Aspect"})
+
+        class Enchant(Schema):
+            power = FloatField(min_value=0.1, max_value=100.0, required=True,
+                               jsonschema_options={"title": "Power"})
+            aspect = IntField(choices=Aspect, required=True, jsonschema_options={"title": "Aspect"})
+
+        class PlayerItem(Schema):
+            item_id = IntField(min_value=0, required=True, jsonschema_options={"title": "Item_id"})
+            enchant = Enchant(required=False, jsonschema_options={"title": "Enchant"})
+
+        class Player(Schema):
+            id = IntField(min_value=0, required=True)
+            _id = StrField(min_length=24, max_length=24, required=True)
+            skills = ListField(nested=Skill(jsonschema_options={"title": "Skill"}),
+                               min_length=4, max_length=10, required=True,
+                               jsonschema_options={"title": "Skills"})
+            items = ListField(nested=PlayerItem(jsonschema_options={"title": "PlayerItem"}),
+                              min_length=4, max_length=20, required=True,
+                              jsonschema_options={"title": "Items"})
+            nickname = StrField(min_length=3, max_length=32, required=False,
+                                jsonschema_options={"title": "Nickname"})
+            is_active = BoolField(required=True, jsonschema_options={"title": "Is active"})
+
+        _expected = {
+            "definitions": {
+                "Enchant": {
+                    "type": "object",
+                    "required": [
+                        "power",
+                        "aspect"
+                    ],
+                    "properties": {
+                        "power": {
+                            "title": "Power",
+                            "type": "number",
+                            "minimum": 0.1,
+                            "maximum": 100.0
+                        },
+                        "aspect": {
+                            "$ref": "#/definitions/Aspect",
+                            "title": "Aspect"
+                        }
+                    }
+                },
+                "Aspect": {
+                    "type": "integer",
+                    "anyOf": [
+                        {
+                            "type": "integer",
+                            "enum": [
+                                1
+                            ],
+                            "title": "Fire"
+                        },
+                        {
+                            "type": "integer",
+                            "enum": [
+                                2
+                            ],
+                            "title": "Water"
+                        },
+                        {
+                            "type": "integer",
+                            "enum": [
+                                3
+                            ],
+                            "title": "Earth"
+                        },
+                        {
+                            "type": "integer",
+                            "enum": [
+                                4
+                            ],
+                            "title": "Air"
+                        }
+                    ]
+                },
+                "PlayerItem": {
+                    "type": "object",
+                    "required": [
+                        "item_id"
+                    ],
+                    "properties": {
+                        "item_id": {
+                            "title": "Item_id",
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "enchant": {
+                            "title": "Enchant",
+                            "$ref": "#/definitions/Enchant"
+                        }
+                    }
+                },
+                "Skill": {
+                    "type": "object",
+                    "required": [
+                        "title",
+                        "power",
+                        "aspect"
+                    ],
+                    "properties": {
+                        "title": {
+                            "title": "Title",
+                            "type": "string",
+                            "minLength": 3,
+                            "maxLength": 32
+                        },
+                        "power": {
+                            "title": "Power",
+                            "type": "number",
+                            "minimum": 0.1,
+                            "maximum": 100.0
+                        },
+                        "aspect": {
+                            "$ref": "#/definitions/Aspect",
+                            "title": "Aspect"
+                        }
+                    }
+                }
+            },
+            "title": "Player editor",
+            "type": "object",
+            "required": [
+                "id",
+                "_id",
+                "skills",
+                "items",
+                "is_active"
+            ],
+            "properties": {
+                "id": {
+                    "title": "id",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "_id": {
+                    "title": "_id",
+                    "type": "string",
+                    "minLength": 24,
+                    "maxLength": 24
+                },
+                "skills": {
+                    "title": "Skills",
+                    "type": "array",
+                    "items": {
+                        "title": "Skill",
+                        "$ref": "#/definitions/Skill"
+                    },
+                    "minItems": 4,
+                    "maxItems": 10
+                },
+                "items": {
+                    "title": "Items",
+                    "type": "array",
+                    "items": {
+                        "title": "Item",
+                        "$ref": "#/definitions/PlayerItem"
+                    },
+                    "minItems": 4,
+                    "maxItems": 20
+                },
+                "nickname": {
+                    "title": "Nickname",
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 32
+                },
+                "is_active": {
+                    "title": "Is active",
+                    "type": "boolean"
+                }
+            }
+        }
+
+        _jsonschema = Player(
+            jsonschema_options={"title": "Player editor"}
+        ).jsonschema(title="Player editor")
+
+        self.maxDiff = None
+        self.assertEqual(
+            _expected["definitions"],
+            _jsonschema["definitions"]
+        )

@@ -1,9 +1,59 @@
 import collections
+
 from dataclasses import dataclass, field
 from datetime import datetime
+from inspect import getmembers, isroutine, isclass
 from typing import Union, List, Callable, Tuple, Any, Type, Dict
 
 from validate_it.base import Validator
+
+
+def choices_from_type(cls):
+    attributes = getmembers(
+        cls,
+        lambda _field: not isroutine(_field)
+    )
+
+    choices = [
+        (value, name.replace("_", " ").lower().capitalize())
+        for name, value in attributes
+        if not name.startswith("__") and not name.endswith("__")
+    ]
+
+    choices.sort(key=lambda x: x[1])
+
+    return choices
+
+
+def update_definitions(instance, schema, definitions):
+    if "definitions" in schema:
+        definitions.update(schema["definitions"])
+        del schema["definitions"]
+
+    definitions_name = instance.jsonschema_options.get(
+        "title",
+    )
+
+    if not definitions_name and hasattr(instance, "choices") and instance.choices:
+        if isclass(instance.choices):
+            definitions_name = instance.choices.__name__
+        else:
+            definitions_name = instance.choices.__class__.__name__
+
+    if not definitions_name:
+        definitions_name = instance.field_name
+
+    if not definitions_name:
+        definitions_name = instance.__class__.__name__
+
+    if definitions_name not in definitions.keys():
+        del schema["title"]
+        definitions[definitions_name] = schema
+
+    return {
+        "title": definitions_name,
+        "$ref": f"#/definitions/{definitions_name}"
+    }
 
 
 @dataclass
@@ -11,14 +61,23 @@ class StrictType(Validator):
     required: bool = False
     default: Union[object, None] = None
     only: Union[Callable, list] = field(default_factory=list)
+    choices: Any = None
     validators: List[Callable] = field(default_factory=list)
 
     def __post_init__(self):
+        if self.choices and self.only:
+            raise TypeError(
+                f"Field {self.field_name} improperly configured: `only` parameter must be empty when `choices` defined"
+            )
+
+        if self.choices:
+            self.only = [choice[0] for choice in choices_from_type(self.choices)]
+
         if self.only and self.default is not None:
             if callable(self.default):
                 raise TypeError(
                     f"Field {self.field_name} improperly configured: `default` parameter does not allow `callable` "
-                    f"when `only` defined"
+                    f"when `only` or `choices` defined"
                 )
             if self.default not in self.only:
                 raise ValueError(f"Field {self.field_name} improperly configured: `default` parameter not in `only` ")
@@ -136,6 +195,41 @@ class StrictType(Validator):
 
         return value
 
+    def get_jsonschema_type(self):
+        return super().get_jsonschema_type()
+
+    def jsonschema(self, definitions=None, **kwargs):
+        _schema = super().jsonschema(definitions, **kwargs)
+
+        if self.only:
+            _type = self.get_jsonschema_type()
+
+            if self.choices:
+                _map = {
+                    _choice[0]: _choice[1]
+                    for _choice in choices_from_type(self.choices)
+                }
+            else:
+                _map = {
+                    _value: _value
+                    for _value in self.only
+                }
+
+            _items = list(_map.items())
+            _items.sort(key=lambda x: x[0])
+
+            _schema['anyOf'] = [
+                {
+                    "type": _type,
+                    "enum": [
+                        _key
+                    ],
+                    "title": _value
+                } for _key, _value in _items
+            ]
+
+        return _schema
+
 
 @dataclass
 class BoolField(StrictType):
@@ -146,9 +240,12 @@ class BoolField(StrictType):
     base_type: Type = bool
     default: Union[bool, None] = None
 
+    def get_jsonschema_type(self):
+        return "boolean"
+
 
 @dataclass
-class AmountMixin(object):
+class AmountMixin:
     min_value: Union[Any, None] = None
     max_value: Union[Any, None] = None
 
@@ -169,16 +266,27 @@ class __Number(AmountMixin, StrictType):
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
 
-        if self.max_value:
+        if self.max_value is not None:
             _data["max_value"] = self.max_value
 
-        if self.min_value:
+        if self.min_value is not None:
             _data["min_value"] = self.min_value
 
         return _data
 
     def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
         return self.validate_amount(value)
+
+    def jsonschema(self, definitions=None, **kwargs):
+        _schema = super().jsonschema(definitions, **kwargs)
+
+        if self.min_value is not None:
+            _schema["minimum"] = self.min_value
+
+        if self.max_value is not None:
+            _schema["maximum"] = self.max_value
+
+        return _schema
 
 
 @dataclass
@@ -192,6 +300,9 @@ class IntField(__Number):
     min_value: Union[int, None] = None
     max_value: Union[int, None] = None
 
+    def get_jsonschema_type(self):
+        return "integer"
+
 
 @dataclass
 class FloatField(__Number):
@@ -204,9 +315,12 @@ class FloatField(__Number):
     min_value: Union[float, None] = None
     max_value: Union[float, None] = None
 
+    def get_jsonschema_type(self):
+        return "number"
+
 
 @dataclass
-class LengthMixin(object):
+class LengthMixin:
     min_length: Union[int, None] = None
     max_length: Union[int, None] = None
 
@@ -234,16 +348,29 @@ class StrField(LengthMixin, StrictType):
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
 
-        if self.max_length:
+        if self.max_length is not None:
             _data["max_length"] = self.max_length
 
-        if self.min_length:
+        if self.min_length is not None:
             _data["min_length"] = self.min_length
 
         return _data
 
     def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
         return self.validate_length(value)
+
+    def jsonschema(self, definitions=None, **kwargs):
+        _schema = super().jsonschema(definitions, **kwargs)
+
+        _schema["type"] = "string"
+
+        if self.min_length is not None:
+            _schema["minLength"] = self.min_length
+
+        if self.max_length is not None:
+            _schema["maxLength"] = self.max_length
+
+        return _schema
 
 
 @dataclass
@@ -314,6 +441,26 @@ class ListField(LengthMixin, StrictType):
             value = [value]
 
         return super().convert(value)
+
+    def jsonschema(self, definitions=None, **kwargs):
+        _schema = super().jsonschema(definitions, **kwargs)
+
+        _schema["type"] = "array"
+
+        if self.min_length is not None:
+            _schema["minItems"] = self.min_length
+
+        if self.max_length is not None:
+            _schema["maxItems"] = self.max_length
+
+        _nested_schema = self.nested.jsonschema(definitions=definitions)
+
+        if isinstance(self.nested, Schema) or "anyOf" in _nested_schema:
+            _schema['item'] = update_definitions(self.nested, _nested_schema, definitions)
+        else:
+            _schema['item'] = _nested_schema
+
+        return _schema
 
 
 @dataclass
@@ -567,6 +714,36 @@ class Schema(StrictType):
                 _errors[_unknown_item] = "Unknown field"
 
         return _errors, value if _errors else _copy
+
+    def jsonschema(self, definitions=None, **kwargs):
+        _schema = super().jsonschema(definitions=None, **kwargs)
+
+        _is_root = definitions is None
+
+        if _is_root:
+            definitions = {}
+
+        required = []
+        properties = {}
+
+        for _key, _value in self.get_fields().items():
+            if _value.required:
+                required.append(_key)
+
+            _value_schema = _value.jsonschema(definitions=definitions)
+
+            if isinstance(_value, Schema) or "anyOf" in _value_schema:
+                properties[_key] = update_definitions(_value, _value_schema, definitions)
+            else:
+                properties[_key] = _value_schema
+
+        _schema["required"] = required
+        _schema["properties"] = properties
+
+        # if root
+        _schema["definitions"] = definitions
+
+        return _schema
 
 
 SchemaField = Schema

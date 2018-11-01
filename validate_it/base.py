@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Tuple, Any, Type
 
 
@@ -9,6 +9,7 @@ class Validator:
     alias: str = ""
     rename: str = ""
     description: str = ""
+    jsonschema_options: dict = field(default_factory=dict)
 
     def __set_name__(self, owner, name):
         self.field_name = name
@@ -36,6 +37,17 @@ class Validator:
 
     def validate_it(self, value, convert=False, strip_unknown=False) -> Tuple[Any, Any]:
         raise NotImplementedError
+
+    def get_jsonschema_type(self):
+        return "object"
+
+    def jsonschema(self, definitions=None, **kwargs):
+        _title = self.jsonschema_options.get("title", self.field_name)
+
+        return {
+            "title": _title,
+            "type": self.get_jsonschema_type()
+        }
 
 
 __all__ = ["Validator"]
