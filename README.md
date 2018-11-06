@@ -224,7 +224,7 @@ assert not _errors
 ```
 
 ### <a name="requirements"/>Requirements</a>
-Tested with `python3.6`
+Tested with `python3.7`
 
 ### <a name="contribution"/>Contribution how-to</a>
 ###### Run tests:
