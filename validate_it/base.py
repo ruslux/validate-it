@@ -41,13 +41,23 @@ class Validator:
     def get_jsonschema_type(self):
         return "object"
 
+    def get_jsonschema_format(self):
+        return ""
+
     def jsonschema(self, definitions=None, **kwargs):
         _title = self.jsonschema_options.get("title", self.field_name)
 
-        return {
+        _schema = {
             "title": _title,
             "type": self.get_jsonschema_type()
         }
+
+        _format = self.get_jsonschema_format()
+
+        if _format:
+            _schema["format"] = _format
+
+        return _schema
 
 
 __all__ = ["Validator"]

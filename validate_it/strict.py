@@ -609,7 +609,10 @@ class DatetimeField(StrictType):
     default: Union[datetime, None] = None
 
     def get_jsonschema_type(self):
-        return "date-time"
+        return "string"
+
+    def get_jsonschema_format(self):
+        return self.jsonschema_options.get("format", "date-time")
 
 
 @dataclass

@@ -143,6 +143,7 @@ class TestClone(TestCase):
             nickname = StrField(min_length=3, max_length=32, required=False,
                                 jsonschema_options={"title": "Nickname"})
             is_active = BoolField(required=True, jsonschema_options={"title": "Is active"})
+            last_update = DatetimeField(required=True, jsonschema_options={"title": "Last update"})
 
         _expected = {
             "definitions": {
@@ -292,6 +293,11 @@ class TestClone(TestCase):
                 "is_active": {
                     "title": "Is active",
                     "type": "boolean"
+                },
+                "last_update": {
+                    "title": "Last update",
+                    "type": "string",
+                    "format": "date-time"
                 }
             }
         }
