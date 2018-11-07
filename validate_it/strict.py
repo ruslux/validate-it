@@ -359,10 +359,11 @@ class StrField(LengthMixin, StrictType):
     def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
         return self.validate_length(value)
 
+    def get_jsonschema_type(self):
+        return "string"
+
     def jsonschema(self, definitions=None, **kwargs):
         _schema = super().jsonschema(definitions, **kwargs)
-
-        _schema["type"] = "string"
 
         if self.min_length is not None:
             _schema["minLength"] = self.min_length
@@ -445,8 +446,6 @@ class ListField(LengthMixin, StrictType):
     def jsonschema(self, definitions=None, **kwargs):
         _schema = super().jsonschema(definitions, **kwargs)
 
-        _schema["type"] = "array"
-
         if self.min_length is not None:
             _schema["minItems"] = self.min_length
 
@@ -461,6 +460,9 @@ class ListField(LengthMixin, StrictType):
             _schema['item'] = _nested_schema
 
         return _schema
+
+    def get_jsonschema_type(self):
+        return "array"
 
 
 @dataclass
@@ -540,6 +542,9 @@ class TupleField(StrictType):
 
         return _error, value
 
+    def get_jsonschema_type(self):
+        return "array"
+
 
 @dataclass
 class DictField(StrictType):
@@ -602,6 +607,9 @@ class DatetimeField(StrictType):
 
     base_type: Type = datetime
     default: Union[datetime, None] = None
+
+    def get_jsonschema_type(self):
+        return "date-time"
 
 
 @dataclass
