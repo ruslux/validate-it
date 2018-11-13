@@ -14,7 +14,7 @@ class TestClone(TestCase):
             "min_value": 1,
             "max_value": 10,
             "extended_type": "IntField",
-            "only": {"example": [1, 2], "type": "callable", "callable": _field.only},
+            "only": {"example": [1, 2], "type": "callable"},
         }
 
         assert FloatField(only=[0.1, 0.2], min_value=0.1, max_value=0.2).representation() == {
@@ -37,7 +37,7 @@ class TestClone(TestCase):
 
         assert _field.representation() == {
             "base_type": "str",
-            "default": {"example": "a", "type": "callable", "callable": _field.default},
+            "default": {"example": "a", "type": "callable"},
             "required": False,
             "min_length": 1,
             "max_length": 2,

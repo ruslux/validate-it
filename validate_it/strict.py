@@ -107,12 +107,12 @@ class StrictType(Validator):
             _data["description"] = self.description
 
         if self.only and callable(self.only):
-            _data["only"] = {"type": "callable", "example": self.only(), "callable": self.only}
+            _data["only"] = {"type": "callable", "example": self.only()}
         elif self.only:
             _data["only"] = self.only
 
         if self.default and callable(self.default):
-            _data["default"] = {"type": "callable", "example": self.default(), "callable": self.default}
+            _data["default"] = {"type": "callable", "example": self.default()}
         elif self.default:
             _data["default"] = self.default
 
