@@ -287,15 +287,15 @@ from validate_it import *
 
 
 class CustomMapper(Schema):
-    first_name = StrField(alias="lastname")
-    last_name = StrField(alias="firstname")
-    
+    first_name = StrField(alias="f")
+    last_name = StrField(alias="l")
+
 _in_data = {
-    "firstname": "Connor",
-    "lastname": "John"
+    "f": "John",
+    "l": "Connor"
 }
 
-_errors, _out_data = CustomMapper().validate_it(_in_data)
+_errors, _out_data = CustomMapper().validate_it(_in_data, strip_unknown=True)
 
 assert _out_data == {"first_name": "John", "last_name": "Connor"}
 ```
