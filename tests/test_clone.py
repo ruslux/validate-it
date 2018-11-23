@@ -8,7 +8,7 @@ class First(Schema):
     b = IntField()
 
 
-Second = First().only_fields("a")
+Second = First().filter_fields("a")
 Third = First().exclude_fields("a")
 
 

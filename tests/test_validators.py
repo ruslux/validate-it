@@ -4,7 +4,7 @@ from unittest import TestCase
 from validate_it import StrField
 
 
-def is_email(value, convert, strip_unknown):
+def is_email(value, **kwargs):
     if not re.match(r"[^@]+@[^@]+\.[^@]+", value):
         return "Invalid email", value
 

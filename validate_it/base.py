@@ -11,6 +11,9 @@ class Validator:
     description: str = ""
     jsonschema_options: dict = field(default_factory=dict)
 
+    class Meta:
+        pass
+
     def __set_name__(self, owner, name):
         self.field_name = name
 

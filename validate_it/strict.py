@@ -8,7 +8,7 @@ from typing import Union, List, Callable, Tuple, Any, Type, Dict
 from validate_it.base import Validator
 
 
-def choices_from_type(cls):
+def choices_from_enum(cls):
     attributes = getmembers(
         cls,
         lambda _field: not isroutine(_field)
@@ -22,7 +22,7 @@ def choices_from_type(cls):
 
     choices.sort(key=lambda x: x[1])
 
-    return choices
+    return tuple(choices)
 
 
 def update_definitions(instance, schema, definitions):
@@ -61,42 +61,31 @@ class StrictType(Validator):
     required: bool = False
     default: Union[object, None] = None
     only: Union[Callable, list] = field(default_factory=list)
-    choices: Any = None
+    enum: Any = None
+    choices: List[Tuple[Any, Any]] = None
     validators: List[Callable] = field(default_factory=list)
 
     def __post_init__(self):
-        if self.choices and self.only:
-            raise TypeError(
-                f"Field {self.field_name} improperly configured: `only` parameter must be empty when `choices` defined"
-            )
+        if self.enum and self.enum is not None:
+            if self.choices:
+                raise TypeError(
+                    f"Field {self.field_name} improperly configured: "
+                    f"`choices` parameter must be empty when `enum` defined"
+                )
+            if self.only:
+                raise TypeError(
+                    f"Field {self.field_name} improperly configured: "
+                    f"`only` parameter must be empty when `enum` defined"
+                )
+            self.choices = choices_from_enum(self.enum)
 
         if self.choices:
-            self.only = [choice[0] for choice in choices_from_type(self.choices)]
-
-        if self.only and self.default is not None:
-            if callable(self.default):
+            if self.only:
                 raise TypeError(
-                    f"Field {self.field_name} improperly configured: `default` parameter does not allow `callable` "
-                    f"when `only` or `choices` defined"
+                    f"Field {self.field_name} improperly configured: "
+                    f"`only` parameter must be empty when `choices` defined"
                 )
-            if self.default not in self.only:
-                raise ValueError(f"Field {self.field_name} improperly configured: `default` parameter not in `only` ")
-
-        for _validator in self.validators:
-            for _item in self.only:
-                _validate_it, _error, _value = _validator(_item, False, False)
-                if _error:
-                    raise ValueError(
-                        f"Field {self.field_name} improperly configured: `only` value {_item} does not pass defined "
-                        f"`validator` {_validator}"
-                    )
-
-            if self.default is not None:
-                _default = self.default() if callable(self.default) else self.default
-                raise ValueError(
-                    f"Field {self.field_name} improperly configured: `default` value {_default} does not pass defined "
-                    f"`validator` {_validator}"
-                )
+            self.only = [choice[0] for choice in self.choices]
 
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
@@ -118,46 +107,53 @@ class StrictType(Validator):
 
         return _data
 
-    def validate_it(self, value, convert=False, strip_unknown=False) -> Tuple[Any, Any]:
-        _error, value = self.set_defaults(value, convert, strip_unknown)
+    def validate_it(self, value, **kwargs) -> Tuple[Any, Any]:
+        """
+        :param value:
+        :param convert=False:
+        :param strip_unknown=False:
+        :param meta=None:
+        :return:
+        """
+        _error, value = self.set_defaults(value, **kwargs)
 
         if not _error:
-            _error, value = self.validate_required(value, convert, strip_unknown)
+            _error, value = self.validate_required(value, **kwargs)
 
         if not _error and value is not None:
-            _error, value = self.validate_type(value, convert, strip_unknown)
+            _error, value = self.validate_type(value, **kwargs)
 
         if not _error and value is not None:
-            _error, value = self.validate_only(value)
+            _error, value = self.validate_only(value, **kwargs)
 
         if not _error and value is not None:
-            _error, value = self.validate_other(value, convert, strip_unknown)
+            _error, value = self.validate_other(value, **kwargs)
 
         if not _error and value is not None:
-            _error, value = self.apply_validators(value, convert, strip_unknown)
+            _error, value = self.apply_validators(value, **kwargs)
 
         return _error, value
 
-    def set_defaults(self, value, convert, strip_unknown) -> Tuple[str, Any]:
+    def set_defaults(self, value, **kwargs) -> Tuple[str, Any]:
         if value is None and self.default is not None:
             if callable(self.default):
-                value = self.default()
+                value = self.default(value, kwargs.get("meta", None))
             else:
                 value = self.default
 
         return "", value
 
-    def validate_required(self, value, convert, strip_unknown) -> Tuple[str, Any]:
+    def validate_required(self, value, **kwargs) -> Tuple[str, Any]:
         if self.required and value is None:
             return "Value is required", value
 
         return "", value
 
-    def validate_type(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
-        if not isinstance(value, self.base_type) and convert:
+    def validate_type(self, value, **kwargs) -> Tuple[Any, Any]:
+        if not isinstance(value, self.base_type) and kwargs.get("convert", False):
             value = self.convert(value)
 
-        if self.base_type is int and isinstance(value, bool) and convert:
+        if self.base_type is int and isinstance(value, bool) and kwargs.get("convert", False):
             value = self.convert(value)
 
         if isinstance(value, self.base_type):
@@ -165,29 +161,29 @@ class StrictType(Validator):
 
         return "Wrong type", value
 
-    def validate_only(self, value) -> Tuple[str, Any]:
+    def validate_only(self, value, **kwargs) -> Tuple[str, Any]:
         only = self.only
 
         if callable(self.only):
-            only = self.only()
+            only = self.only(value, kwargs.get("meta", None))
 
         if only and value not in only:
             return f"Value must belong to `{only}`", value
         else:
             return "", value
 
-    def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
+    def validate_other(self, value, **kwargs) -> Tuple[Any, Any]:
         return {}, value
 
-    def apply_validators(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
+    def apply_validators(self, value, **kwargs) -> Tuple[Any, Any]:
         _error = ""
 
         for validator in self.validators:
-            _error, value = validator(value, convert, strip_unknown)
+            _error, value = validator(value, **kwargs)
 
         return _error, value
 
-    def convert(self, value):
+    def convert(self, value, **kwargs):
         try:
             value = self.base_type(value)
         except Exception:
@@ -207,7 +203,7 @@ class StrictType(Validator):
             if self.choices:
                 _map = {
                     _choice[0]: _choice[1]
-                    for _choice in choices_from_type(self.choices)
+                    for _choice in self.choices
                 }
             else:
                 _map = {
@@ -249,7 +245,7 @@ class AmountMixin:
     min_value: Union[Any, None] = None
     max_value: Union[Any, None] = None
 
-    def validate_amount(self, value) -> Tuple[Union[Any, str], Any]:
+    def validate_amount(self, value, **kwargs) -> Tuple[Union[Any, str], Any]:
         if self.min_value is not None:
             if value < self.min_value:
                 return f"Value must be greater than `{self.min_value}`", value
@@ -274,8 +270,8 @@ class __Number(AmountMixin, StrictType):
 
         return _data
 
-    def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
-        return self.validate_amount(value)
+    def validate_other(self, value, **kwargs) -> Tuple[Any, Any]:
+        return self.validate_amount(value, **kwargs)
 
     def jsonschema(self, definitions=None, **kwargs):
         _schema = super().jsonschema(definitions, **kwargs)
@@ -324,7 +320,7 @@ class LengthMixin:
     min_length: Union[int, None] = None
     max_length: Union[int, None] = None
 
-    def validate_length(self, value) -> Tuple[Union[Any, str], Any]:
+    def validate_length(self, value, **kwargs) -> Tuple[Union[Any, str], Any]:
         if self.min_length is not None:
             if len(value) < self.min_length:
                 return f"Value length must be greater than `{self.min_length}`", value
@@ -356,8 +352,8 @@ class StrField(LengthMixin, StrictType):
 
         return _data
 
-    def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
-        return self.validate_length(value)
+    def validate_other(self, value, **kwargs) -> Tuple[Any, Any]:
+        return self.validate_length(value, **kwargs)
 
     def get_jsonschema_type(self):
         return "string"
@@ -401,12 +397,12 @@ class ListField(LengthMixin, StrictType):
     default: Union[List[Any], None] = None
     nested: Union[Validator, None] = None
 
-    def validate_items(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
+    def validate_items(self, value, **kwargs) -> Tuple[Any, Any]:
         _errors = {}
 
         if value:
             for _index, _item in enumerate(value):
-                _item_error, _item = self.nested.validate_it(_item, convert, strip_unknown)
+                _item_error, _item = self.nested.validate_it(_item, **kwargs)
 
                 if _item_error:
                     _errors[_index] = _item_error
@@ -415,11 +411,11 @@ class ListField(LengthMixin, StrictType):
 
         return _errors, value
 
-    def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
-        _error, value = self.validate_length(value)
+    def validate_other(self, value, **kwargs) -> Tuple[Any, Any]:
+        _error, value = self.validate_length(value, **kwargs)
 
         if not _error:
-            _error, value = self.validate_items(value, convert, strip_unknown)
+            _error, value = self.validate_items(value, **kwargs)
 
         return _error, value
 
@@ -437,11 +433,11 @@ class ListField(LengthMixin, StrictType):
 
         return _data
 
-    def convert(self, value):
+    def convert(self, value, **kwargs):
         if not isinstance(value, collections.MutableSequence) and not isinstance(value, tuple):
             value = [value]
 
-        return super().convert(value)
+        return super().convert(value, **kwargs)
 
     def jsonschema(self, definitions=None, **kwargs):
         _schema = super().jsonschema(definitions, **kwargs)
@@ -508,13 +504,13 @@ class TupleField(StrictType):
 
         return _data
 
-    def validate_length(self, value, convert, strip_unknown) -> Tuple[str, Any]:
+    def validate_length(self, value, **kwargs) -> Tuple[str, Any]:
         if len(value) == len(self.nested):
             return "", value
         else:
             return "Tuple length does not match with value length", value
 
-    def validate_items(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
+    def validate_items(self, value, **kwargs) -> Tuple[Any, Any]:
         _errors = {}
 
         value = list(value)
@@ -522,7 +518,7 @@ class TupleField(StrictType):
         if value:
             for _index, _field in enumerate(self.nested):
                 _item = value[_index]
-                _item_error, _item = _field.validate_it(_item, convert, strip_unknown)
+                _item_error, _item = _field.validate_it(_item, **kwargs)
 
                 if _item_error:
                     _errors[_index] = _item_error
@@ -531,14 +527,14 @@ class TupleField(StrictType):
 
         return _errors, tuple(value)
 
-    def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
+    def validate_other(self, value, **kwargs) -> Tuple[Any, Any]:
         if not self.nested:
             return {}, value
 
-        _error, value = self.validate_length(value, convert, strip_unknown)
+        _error, value = self.validate_length(value, **kwargs)
 
         if not _error:
-            _error, value = self.validate_items(value, convert, strip_unknown)
+            _error, value = self.validate_items(value, **kwargs)
 
         return _error, value
 
@@ -583,13 +579,13 @@ class DictField(StrictType):
 
         return _data
 
-    def validate_other(self, value, convert, strip_unknown) -> Tuple[Any, Any]:
+    def validate_other(self, value, **kwargs) -> Tuple[Any, Any]:
         _errors = {}
 
         if value:
             for _key, _value in value.items():
                 self.nested.field_name = self.field_name
-                _item_error, _value = self.nested.validate_it(_value, convert, strip_unknown)
+                _item_error, _value = self.nested.validate_it(_value, **kwargs)
 
                 if _item_error:
                     _errors[_key] = _item_error
@@ -645,6 +641,10 @@ class Schema(StrictType):
     default: Union[Callable, dict, None] = None
     required: bool = True
 
+    def validate_it(self, value, **kwargs) -> Tuple[Any, Any]:
+        kwargs["meta"] = self.Meta
+        return super().validate_it(value, **kwargs)
+
     @classmethod
     def get_singleton_name(cls, *args, **kwargs):
         return cls.__name__ + "_" + str(cls.get_fields()) + "_" + str(kwargs)
@@ -659,7 +659,7 @@ class Schema(StrictType):
         return {k: v for k, v in cls.__dict__.items() if isinstance(v, Validator)}
 
     @classmethod
-    def only_fields(cls, *args: str):
+    def filter_fields(cls, *args: str):
         """
         Clone schema with only fields described in ``*args``
 
@@ -695,7 +695,7 @@ class Schema(StrictType):
 
         return type(cls.__name__, cls.__bases__, _new)
 
-    def validate_other(self, value, convert=False, strip_unknown=False) -> Tuple[Any, Any]:
+    def validate_other(self, value, **kwargs) -> Tuple[Any, Any]:
         _errors = {}
 
         _value_keys = set(value.keys())
@@ -705,8 +705,7 @@ class Schema(StrictType):
 
         for _name, _field in self.get_fields().items():
             _check = value.get(_field.alias) if _field.alias else value.get(_name)
-
-            _error, _value = _field.validate_it(_check, convert, strip_unknown)
+            _error, _value = _field.validate_it(_check, **kwargs)
 
             if _error:
                 _errors[_name] = _error
@@ -721,7 +720,7 @@ class Schema(StrictType):
             _schema_keys.add(_name)
 
         for _unknown_item in _value_keys - _schema_keys:
-            if not strip_unknown:
+            if not kwargs.get("strip_unknown", False):
                 _errors[_unknown_item] = "Unknown field"
 
         return _errors, value if _errors else _copy
@@ -772,4 +771,5 @@ __all__ = [
     "DatetimeField",
     "Schema",
     "SchemaField",
+    "choices_from_enum",
 ]

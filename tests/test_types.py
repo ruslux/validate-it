@@ -29,17 +29,17 @@ class BoolFieldTestCase(TestCase):
         assert not error
 
     def test_default_callable_not_required(self):
-        error, value = BoolField(default=lambda: True).validate_it(None)
+        error, value = BoolField(default=lambda *_: True).validate_it(None)
         assert value
 
-        error, value = BoolField(default=lambda: False).validate_it(None)
+        error, value = BoolField(default=lambda *_: False).validate_it(None)
         assert not value
 
-        error, value = BoolField(default=lambda: True).validate_it(False)
+        error, value = BoolField(default=lambda *_: True).validate_it(False)
         assert not value
 
     def test_default_callable_required(self):
-        error, value = BoolField(default=lambda: True, required=True).validate_it(None)
+        error, value = BoolField(default=lambda *_: True, required=True).validate_it(None)
         assert not error
 
     def test_wrong_type(self):
@@ -54,10 +54,10 @@ class BoolFieldTestCase(TestCase):
         assert not error
 
     def test_only_callable(self):
-        error, value = BoolField(only=lambda: [False]).validate_it(True)
+        error, value = BoolField(only=lambda *_: [False]).validate_it(True)
         assert error
 
-        error, value = BoolField(only=lambda: [True]).validate_it(True)
+        error, value = BoolField(only=lambda *_: [True]).validate_it(True)
         assert not error
 
     def test_amount(self):
@@ -98,17 +98,17 @@ class IntFieldTestCase(TestCase):
         assert not error
 
     def test_default_callable_not_required(self):
-        error, value = IntField(default=lambda: 3).validate_it(None)
+        error, value = IntField(default=lambda *_: 3).validate_it(None)
         assert value is 3
 
-        error, value = IntField(default=lambda: 0).validate_it(None)
+        error, value = IntField(default=lambda *_: 0).validate_it(None)
         assert value is 0
 
-        error, value = IntField(default=lambda: 3).validate_it(4)
+        error, value = IntField(default=lambda *_: 3).validate_it(4)
         assert value is 4
 
     def test_default_callable_required(self):
-        error, value = IntField(default=lambda: 3, required=True).validate_it(None)
+        error, value = IntField(default=lambda *_: 3, required=True).validate_it(None)
         assert not error
         assert value is 3
 
@@ -124,10 +124,10 @@ class IntFieldTestCase(TestCase):
         assert not error
 
     def test_only_callable(self):
-        error, value = IntField(only=lambda: [1, 2, 3]).validate_it(4)
+        error, value = IntField(only=lambda *_: [1, 2, 3]).validate_it(4)
         assert error
 
-        error, value = IntField(only=lambda: [1, 2, 3]).validate_it(1)
+        error, value = IntField(only=lambda *_: [1, 2, 3]).validate_it(1)
         assert not error
 
     def test_amount(self):
@@ -186,17 +186,17 @@ class FloatFieldTestCase(TestCase):
         assert not error
 
     def test_default_callable_not_required(self):
-        error, value = FloatField(default=lambda: 3.0).validate_it(None)
+        error, value = FloatField(default=lambda *_: 3.0).validate_it(None)
         assert value == 3.0
 
-        error, value = FloatField(default=lambda: 0.0).validate_it(None)
+        error, value = FloatField(default=lambda *_: 0.0).validate_it(None)
         assert value == 0.0
 
-        error, value = FloatField(default=lambda: 3.0).validate_it(4.0)
+        error, value = FloatField(default=lambda *_: 3.0).validate_it(4.0)
         assert value == 4.0
 
     def test_default_callable_required(self):
-        error, value = FloatField(default=lambda: 3.0, required=True).validate_it(None)
+        error, value = FloatField(default=lambda *_: 3.0, required=True).validate_it(None)
         assert not error
         assert value == 3.0
 
@@ -212,10 +212,10 @@ class FloatFieldTestCase(TestCase):
         assert not error
 
     def test_only_callable(self):
-        error, value = FloatField(only=lambda: [1.0, 2.0, 3.0]).validate_it(4.0)
+        error, value = FloatField(only=lambda *_: [1.0, 2.0, 3.0]).validate_it(4.0)
         assert error
 
-        error, value = FloatField(only=lambda: [1.0, 2.0, 3.0]).validate_it(1.0)
+        error, value = FloatField(only=lambda *_: [1.0, 2.0, 3.0]).validate_it(1.0)
         assert not error
 
     def test_amount(self):
@@ -275,17 +275,17 @@ class StrFieldTestCase(TestCase):
         assert value == "a"
 
     def test_default_callable_not_required(self):
-        error, value = StrField(default=lambda: "a").validate_it(None)
+        error, value = StrField(default=lambda *_: "a").validate_it(None)
         assert value == "a"
 
-        error, value = StrField(default=lambda: "").validate_it(None)
+        error, value = StrField(default=lambda *_: "").validate_it(None)
         assert value == ""
 
-        error, value = StrField(default=lambda: "a").validate_it("b")
+        error, value = StrField(default=lambda *_: "a").validate_it("b")
         assert value == "b"
 
     def test_default_callable_required(self):
-        error, value = StrField(default=lambda: "a", required=True).validate_it(None)
+        error, value = StrField(default=lambda *_: "a", required=True).validate_it(None)
         assert not error
         assert value == "a"
 
@@ -301,10 +301,10 @@ class StrFieldTestCase(TestCase):
         assert not error
 
     def test_only_callable(self):
-        error, value = StrField(only=lambda: ["a", "b", "c"]).validate_it("d")
+        error, value = StrField(only=lambda *_: ["a", "b", "c"]).validate_it("d")
         assert error
 
-        error, value = StrField(only=lambda: ["a", "b", "c"]).validate_it("a")
+        error, value = StrField(only=lambda *_: ["a", "b", "c"]).validate_it("a")
         assert not error
 
     def test_amount(self):
@@ -364,17 +364,17 @@ class ListFieldTestCase(TestCase):
         assert value == [1]
 
     def test_default_callable_not_required(self):
-        error, value = ListField(nested=IntField(), default=lambda: [1]).validate_it(None)
+        error, value = ListField(nested=IntField(), default=lambda *_: [1]).validate_it(None)
         assert value == [1]
 
-        error, value = ListField(nested=IntField(), default=lambda: []).validate_it(None)
+        error, value = ListField(nested=IntField(), default=lambda *_: []).validate_it(None)
         assert value == []
 
-        error, value = ListField(nested=IntField(), default=lambda: [1]).validate_it([2])
+        error, value = ListField(nested=IntField(), default=lambda *_: [1]).validate_it([2])
         assert value == [2]
 
     def test_default_callable_required(self):
-        error, value = ListField(nested=IntField(), default=lambda: [1], required=True).validate_it(None)
+        error, value = ListField(nested=IntField(), default=lambda *_: [1], required=True).validate_it(None)
         assert not error
         assert value == [1]
 
@@ -390,10 +390,10 @@ class ListFieldTestCase(TestCase):
         assert not error
 
     def test_only_callable(self):
-        error, value = ListField(nested=IntField(), only=lambda: [[1], [2, 3], [3, 4]]).validate_it([4, 5])
+        error, value = ListField(nested=IntField(), only=lambda *_: [[1], [2, 3], [3, 4]]).validate_it([4, 5])
         assert error
 
-        error, value = ListField(nested=IntField(), only=lambda: [[1], [2, 3], [3, 4]]).validate_it([3, 4])
+        error, value = ListField(nested=IntField(), only=lambda *_: [[1], [2, 3], [3, 4]]).validate_it([3, 4])
         assert not error
 
     def test_amount(self):
@@ -462,23 +462,23 @@ class TupleFieldTestCase(TestCase):
 
     def test_default_callable_not_required(self):
         error, value = TupleField(
-            nested=[IntField(), FloatField(), StrField()], default=lambda: (1, 2.0, "3")
+            nested=[IntField(), FloatField(), StrField()], default=lambda *_: (1, 2.0, "3")
         ).validate_it(None)
         assert value == (1, 2.0, "3")
 
-        error, value = TupleField(nested=[IntField(), FloatField(), StrField()], default=lambda: tuple()).validate_it(
+        error, value = TupleField(nested=[IntField(), FloatField(), StrField()], default=lambda *_: tuple()).validate_it(
             None
         )
         assert value == tuple()
 
         error, value = TupleField(
-            nested=[IntField(), FloatField(), StrField()], default=lambda: (1, 2.0, "3")
+            nested=[IntField(), FloatField(), StrField()], default=lambda *_: (1, 2.0, "3")
         ).validate_it((2, 3.0, "4.0"))
         assert value == (2, 3.0, "4.0")
 
     def test_default_callable_required(self):
         error, value = TupleField(
-            nested=[IntField(), FloatField(), StrField()], default=lambda: (1, 2.0, "3"), required=True
+            nested=[IntField(), FloatField(), StrField()], default=lambda *_: (1, 2.0, "3"), required=True
         ).validate_it(None)
         assert not error
         assert value == (1, 2.0, "3")
@@ -500,12 +500,12 @@ class TupleFieldTestCase(TestCase):
 
     def test_only_callable(self):
         error, value = TupleField(
-            nested=[IntField(), FloatField(), StrField()], only=lambda: [(1, 2.0, "3"), (2, 3.0, "4"), (3, 4.0, "5")]
+            nested=[IntField(), FloatField(), StrField()], only=lambda *_: [(1, 2.0, "3"), (2, 3.0, "4"), (3, 4.0, "5")]
         ).validate_it((4, 5.0, "6"))
         assert error
 
         error, value = TupleField(
-            nested=[IntField(), FloatField(), StrField()], only=lambda: [(1, 2.0, "3"), (2, 3.0, "4"), (3, 4.0, "5")]
+            nested=[IntField(), FloatField(), StrField()], only=lambda *_: [(1, 2.0, "3"), (2, 3.0, "4"), (3, 4.0, "5")]
         ).validate_it((1, 2.0, "3"))
         assert not error
 
@@ -576,22 +576,22 @@ class DictFieldTestCase(TestCase):
         assert value == self._as_first
 
     def test_default_callable_not_required(self):
-        error, value = DictField(nested=IntField(), default=lambda: self._first).validate_it(None)
+        error, value = DictField(nested=IntField(), default=lambda *_: self._first).validate_it(None)
         assert value == self._as_first
 
-        error, value = DictField(nested=IntField(), default=lambda: {}).validate_it(None)
+        error, value = DictField(nested=IntField(), default=lambda *_: {}).validate_it(None)
         assert value == {}
 
         value["a"] = 1
 
-        error, value = DictField(nested=IntField(), default=lambda: {}).validate_it(None)
+        error, value = DictField(nested=IntField(), default=lambda *_: {}).validate_it(None)
         assert value == {}
 
-        error, value = DictField(nested=IntField(), default=lambda: self._first).validate_it(self._second)
+        error, value = DictField(nested=IntField(), default=lambda *_: self._first).validate_it(self._second)
         assert value == self._as_second
 
     def test_default_callable_required(self):
-        error, value = DictField(nested=IntField(), default=lambda: self._first, required=True).validate_it(None)
+        error, value = DictField(nested=IntField(), default=lambda *_: self._first, required=True).validate_it(None)
         assert not error
         assert value == self._as_first
 
@@ -607,10 +607,10 @@ class DictFieldTestCase(TestCase):
         assert not error
 
     def test_only_callable(self):
-        error, value = DictField(nested=IntField(), only=lambda: [self._first, self._second]).validate_it(self._third)
+        error, value = DictField(nested=IntField(), only=lambda *_: [self._first, self._second]).validate_it(self._third)
         assert error
 
-        error, value = DictField(nested=IntField(), only=lambda: [self._first, self._second]).validate_it(
+        error, value = DictField(nested=IntField(), only=lambda *_: [self._first, self._second]).validate_it(
             self._as_first
         )
         assert not error
@@ -677,14 +677,14 @@ class DatetimeFieldTestCase(TestCase):
         assert value == self._as_first
 
     def test_default_callable_not_required(self):
-        error, value = DatetimeField(default=lambda: self._first).validate_it(None)
+        error, value = DatetimeField(default=lambda *_: self._first).validate_it(None)
         assert value == self._as_first
 
-        error, value = DatetimeField(default=lambda: self._first).validate_it(self._second)
+        error, value = DatetimeField(default=lambda *_: self._first).validate_it(self._second)
         assert value == self._as_second
 
     def test_default_callable_required(self):
-        error, value = DatetimeField(default=lambda: self._first, required=True).validate_it(None)
+        error, value = DatetimeField(default=lambda *_: self._first, required=True).validate_it(None)
         assert not error
         assert value == self._as_first
 
@@ -700,10 +700,10 @@ class DatetimeFieldTestCase(TestCase):
         assert not error
 
     def test_only_callable(self):
-        error, value = DatetimeField(only=lambda: [self._first, self._second]).validate_it(self._third)
+        error, value = DatetimeField(only=lambda *_: [self._first, self._second]).validate_it(self._third)
         assert error
 
-        error, value = DatetimeField(only=lambda: [self._first, self._second]).validate_it(self._as_first)
+        error, value = DatetimeField(only=lambda *_: [self._first, self._second]).validate_it(self._as_first)
         assert not error
 
     def test_amount(self):
@@ -741,12 +741,12 @@ class AnyTestCase(TestCase):
         assert value == 1
 
     def test_default_callable_not_required(self):
-        error, value = AnyType(default=lambda: 1).validate_it(None)
+        error, value = AnyType(default=lambda *_: 1).validate_it(None)
         assert not error
         assert value == 1
 
     def test_default_callable_required(self):
-        error, value = AnyType(default=lambda: 1, required=True).validate_it(None)
+        error, value = AnyType(default=lambda *_: 1, required=True).validate_it(None)
         assert not error
         assert value == 1
 
@@ -763,11 +763,11 @@ class AnyTestCase(TestCase):
         assert value == 1
 
     def test_only_callable(self):
-        error, value = AnyType(only=lambda: [1, "a", 3.0]).validate_it(4)
+        error, value = AnyType(only=lambda *_: [1, "a", 3.0]).validate_it(4)
         assert error
         assert value == 4
 
-        error, value = AnyType(only=lambda: [1, "a", 3.0]).validate_it(1)
+        error, value = AnyType(only=lambda *_: [1, "a", 3.0]).validate_it(1)
         assert not error
         assert value == 1
 

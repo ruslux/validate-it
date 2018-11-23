@@ -35,11 +35,11 @@ class UnionType(StrictType):
 
         return _data
 
-    def validate_it(self, value, convert=False, strip_unknown=False) -> Tuple[dict, dict]:
+    def validate_it(self, value, **kwargs) -> Tuple[dict, dict]:
         _errors = {}
 
         for _alternative in self.alternatives:
-            _error, _value = _alternative.validate_it(value, convert, strip_unknown)
+            _error, _value = _alternative.validate_it(value, **kwargs)
 
             if not _error:
                 return _error, _value

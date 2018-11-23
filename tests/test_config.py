@@ -1,38 +1,37 @@
+from dataclasses import dataclass
 from unittest import TestCase
 
 from validate_it import Schema, IntField
 
 
+class Enum:
+    ONE = 1
+    TWO = 2
+
+
 class TestStrictTypeConfig(TestCase):
     def test_only(self):
+
+        @dataclass
         class A(Schema):
-            a = IntField(default=lambda: 10)
-            b = IntField(default=10)
+            a = IntField(enum=Enum)
+
+        self.assertEqual(A.a.choices, ((1, 'One'), (2, 'Two')))
+        self.assertEqual(A.a.only, [1, 2])
 
         with self.assertRaises(TypeError):
+            @dataclass
+            class A(Schema):
+                a = IntField(enum=Enum, choices=((1, 'One'), (2, 'Two')))
 
-            class B(Schema):
-                a = IntField(default=lambda: 10, only=[1, 2])
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
+            @dataclass
+            class A(Schema):
+                a = IntField(enum=Enum, only=[1, 2])
 
-            class C(Schema):
-                a = IntField(default=10, only=[1, 2])
 
-        def false_validator(value, convert, strip_unknown):
-            return False, "Wrong", value
-
-        with self.assertRaises(ValueError):
-
-            class D(Schema):
-                a = IntField(only=[1, 2], validators=[false_validator])
-
-        with self.assertRaises(ValueError):
-
-            class E(Schema):
-                a = IntField(default=1, validators=[false_validator])
-
-        with self.assertRaises(ValueError):
-
-            class F(Schema):
-                a = IntField(default=lambda: 1, validators=[false_validator])
+        with self.assertRaises(TypeError):
+            @dataclass
+            class A(Schema):
+                a = IntField(choices=((1, 'One'), (2, 'Two')), only=[1, 2])

@@ -1,5 +1,3 @@
-import inspect
-from pprint import pprint
 from unittest import TestCase
 
 from validate_it import *
@@ -7,7 +5,7 @@ from validate_it import *
 
 class TestClone(TestCase):
     def test_representation(self):
-        _field = IntField(required=True, min_value=1, max_value=10, only=lambda: [1, 2])
+        _field = IntField(required=True, min_value=1, max_value=10, only=lambda *_: [1, 2])
         assert _field.representation() == {
             "base_type": "int",
             "required": True,
@@ -33,7 +31,7 @@ class TestClone(TestCase):
             "extended_type": "BoolField",
         }
 
-        _field = StrField(default=lambda: "a", min_length=1, max_length=2)
+        _field = StrField(default=lambda *_: "a", min_length=1, max_length=2)
 
         assert _field.representation() == {
             "base_type": "str",
@@ -120,12 +118,12 @@ class TestClone(TestCase):
         class Skill(Schema):
             title = StrField(min_length=3, max_length=32, required=True, jsonschema_options={"title": "Title"})
             power = FloatField(min_value=0.1, max_value=100.0, required=True, jsonschema_options={"title": "Power"})
-            aspect = IntField(choices=Aspect, required=True, jsonschema_options={"title": "Aspect"})
+            aspect = IntField(enum=Aspect, required=True, jsonschema_options={"title": "Aspect"})
 
         class Enchant(Schema):
             power = FloatField(min_value=0.1, max_value=100.0, required=True,
                                jsonschema_options={"title": "Power"})
-            aspect = IntField(choices=Aspect, required=True, jsonschema_options={"title": "Aspect"})
+            aspect = IntField(enum=Aspect, required=True, jsonschema_options={"title": "Aspect"})
 
         class PlayerItem(Schema):
             item_id = IntField(min_value=0, required=True, jsonschema_options={"title": "Item_id"})
