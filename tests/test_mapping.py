@@ -1,6 +1,6 @@
 from unittest import TestCase
 from validate_it import *
-from accordion import compress
+from accordion import compress, expand
 
 
 class TestMapping(TestCase):
@@ -42,3 +42,33 @@ class TestMapping(TestCase):
         _errors, _out_data = CustomMapper().validate_it(compress(_in_data), strip_unknown=True)
 
         assert _out_data == {"nickname": "Killer777", "int": 7, "dex": 55, "str": 11, "vit": 44}
+
+    def test_back_nested_mapping(self):
+        class CustomMapper(Schema):
+            nickname = StrField(rename="info.nickname")
+            int = IntField(rename="characteristics/0")
+            dex = IntField(rename="characteristics/1")
+            str = IntField(rename="characteristics/2")
+            vit = IntField(rename="characteristics/3")
+
+        _in_data = {
+            "nickname": "Killer777",
+            "int": 7,
+            "dex": 55,
+            "str": 11,
+            "vit": 44
+        }
+
+        _errors, _out_data = CustomMapper().validate_it(_in_data, strip_unknown=True)
+
+        assert expand(_out_data) == {
+            "info": {
+                "nickname": "Killer777",
+            },
+            "characteristics": [
+                7,
+                55,
+                11,
+                44
+            ]
+        }

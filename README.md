@@ -336,6 +336,43 @@ assert _out_data == {
 }
 ```
 
+and back:
+```python
+from validate_it import *
+from accordion import expand
+
+
+class CustomMapper(Schema):
+    nickname = StrField(rename="info.nickname")
+    int = IntField(rename="characteristics/0")
+    dex = IntField(rename="characteristics/1")
+    str = IntField(rename="characteristics/2")
+    vit = IntField(rename="characteristics/3")
+
+_in_data = {
+    "nickname": "Killer777", 
+    "int": 7, 
+    "dex": 55, 
+    "str": 11, 
+    "vit": 44
+}
+
+_errors, _out_data = CustomMapper().validate_it(_in_data, strip_unknown=True)
+
+
+assert expand(_out_data) == {
+    "info": {
+        "nickname": "Killer777",
+    },
+    "characteristics": [
+        7,
+        55,
+        11,
+        44
+    ]
+}
+```
+
 ### <a name="requirements"/>Requirements</a>
 Tested with `python3.7`
 
