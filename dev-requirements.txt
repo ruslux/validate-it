@@ -2,9 +2,5 @@ pytest==3.4.0
 coverage==4.5
 pytest-cov==2.5.1
 twine
-sphinx
-sphinx-autobuild
-aiohttp_theme
-sphinx-intl
-dotmap==1.2.20
 python-box
+accordion==0.1.1
