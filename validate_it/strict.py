@@ -569,6 +569,7 @@ class DictField(StrictType):
 
     base_type: Type = dict
     default: Union[Callable, Dict[str, Validator], None] = None
+    key: Union[Validator, None] = None
     nested: Union[Validator, None] = None
 
     def representation(self, **kwargs):
@@ -579,20 +580,37 @@ class DictField(StrictType):
 
         return _data
 
+    def validate_key(self, key, **kwargs):
+        return self.key.validate_it(key, **kwargs)
+
+    def validate_nested(self, value, **kwargs):
+        return self.nested.validate_it(value, **kwargs)
+
     def validate_other(self, value, **kwargs) -> Tuple[Any, Any]:
         _errors = {}
-
+        _new_value = {}
         if value:
             for _key, _value in value.items():
-                self.nested.field_name = self.field_name
-                _item_error, _value = self.nested.validate_it(_value, **kwargs)
+                if self.key:
+                    self.key.field_name = self.field_name
+                    _key_error, _key = self.validate_key(_key, **kwargs)
 
-                if _item_error:
-                    _errors[_key] = _item_error
-                else:
-                    value[_key] = _value
+                    if _key_error:
+                        _errors[_key] = _errors.get(_key, {})
+                        _errors[_key]['key'] = _key_error
 
-        return _errors, value
+                if self.nested:
+                    self.nested.field_name = self.field_name
+                    _value_error, _value = self.validate_nested(_value, **kwargs)
+
+                    if _value_error:
+                        _errors[_key] = _errors.get(_key, {})
+                        _errors[_key]['value'] = _value_error
+
+                if not _errors:
+                    _new_value[_key] = _value
+
+        return _errors, _new_value
 
 
 @dataclass

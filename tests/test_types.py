@@ -629,6 +629,11 @@ class DictFieldTestCase(TestCase):
         assert not error
         assert value == {"a": 1, "b": 2}
 
+        _numbers = {"1": 1, "2": 2, "3": 3}
+        error, value = DictField(key=IntField(), nested=IntField(), required=True).validate_it(_numbers, convert=True)
+        assert not error
+        assert value == {1: 1, 2: 2, 3: 3}
+
 
 class DatetimeFieldTestCase(TestCase):
     _first = datetime.now()

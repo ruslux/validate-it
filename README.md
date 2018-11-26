@@ -83,10 +83,11 @@ from validate_it import *
 
 
 errors, value = DictField(
+    key=IntField(),
     nested=IntField()
-).validate_it({'a': 1, 'b': 2, 'c': 3})
+).validate_it({'1': 1, '2': 2, '3': 3})
 
-assert value == {'a': 1, 'b': 2, 'c': 3}
+assert value == {1: 1, 2: 2, 3: 3}
 assert not errors
 ```
 * ``DatetimeField``
