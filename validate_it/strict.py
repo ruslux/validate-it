@@ -373,7 +373,7 @@ class StrField(LengthMixin, StrictType):
 @dataclass
 class ListField(LengthMixin, StrictType):
     """
-    Поле для значений типа ``list``, который хранит в себе значения типа указанного в ``children_type``
+    Поле для значений типа ``list``, который хранит в себе значения типа указанного в ``nested``
 
     Например:
 
@@ -382,7 +382,7 @@ class ListField(LengthMixin, StrictType):
         class Good(Schema):
             price_range = List(
                 required=True,
-                children_type=Float()
+                nested=Float()
             )
 
         # prices for different user categories:
@@ -545,7 +545,7 @@ class TupleField(StrictType):
 @dataclass
 class DictField(StrictType):
     """
-    Поле для значений типа ``dict``, который хранит в себе значения типа указанного в ``children_type``.
+    Поле для значений типа ``dict``, который хранит в себе значения типа указанного в ``nested``.
 
     Например:
 
@@ -553,7 +553,7 @@ class DictField(StrictType):
 
         class Character(Schema):
             skills = Dict(
-                children_type=Float()
+                nested=Float()
             )
 
         _data = {
@@ -722,13 +722,11 @@ class Schema(StrictType):
         _copy = value.__class__()
 
         for _name, _field in self.get_fields().items():
-            _check = value.get(_field.alias) if _field.alias else value.get(_name)
-            _error, _value = _field.validate_it(_check, **kwargs)
+            _value = value.get(_field.alias) if _field.alias else value.get(_name)
+            _error, _value = _field.validate_it(_value, **kwargs)
 
             if _error:
                 _errors[_name] = _error
-            elif _value is None:
-                continue
 
             if _field.rename:
                 _copy[_field.rename] = _value

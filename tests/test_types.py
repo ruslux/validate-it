@@ -904,3 +904,17 @@ class SchemaTestCase(TestCase):
         error, value = A().validate_it(_data, strip_unknown=True, convert=True)
         assert not error
         assert value.c == 1
+
+    def test_none_value(self):
+        class A(Schema):
+            a = IntField()
+
+        error, value = A().validate_it({'a': None})
+        assert not error
+        assert value == {'a': None}
+
+        class A(Schema):
+            a = IntField(required=True)
+
+        error, value = A().validate_it({'a': None})
+        assert error
