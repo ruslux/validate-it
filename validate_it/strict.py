@@ -734,6 +734,8 @@ class Schema(StrictType):
                 _errors[_search_name] = _error
 
             # {} -> {} instead {} -> {'a': None}, if schema has not required field 'a'
+            # but
+            # {'a': None} -> {'a': None}, if origin value has not required field 'a'
             if _search_name not in value.keys() and value.get(_search_name) is None and _nested_value is None:
                 continue
 
