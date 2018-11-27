@@ -378,6 +378,10 @@ class ListFieldTestCase(TestCase):
         assert not error
         assert value == [1]
 
+    def test_default_callable_short(self):
+        error, value = ListField(nested=IntField(), default=list, required=True).validate_it(None)
+        assert value == []
+
     def test_wrong_type(self):
         error, value = ListField(nested=IntField()).validate_it((1,))
         assert error
@@ -594,6 +598,10 @@ class DictFieldTestCase(TestCase):
         error, value = DictField(nested=IntField(), default=lambda *_: self._first, required=True).validate_it(None)
         assert not error
         assert value == self._as_first
+
+    def test_default_callable_short(self):
+        error, value = DictField(nested=IntField(), default=dict, required=True).validate_it(None)
+        assert value == {}
 
     def test_wrong_type(self):
         error, value = DictField(nested=IntField()).validate_it(1.0)
@@ -865,6 +873,14 @@ class SchemaTestCase(TestCase):
 
     def test_default_callable_required(self):
         pass
+
+    def test_default_callable_short(self):
+        class A(Schema):
+            a = IntField()
+
+        error, value = A(default=dict, required=True).validate_it(None)
+
+        assert value == {}
 
     def test_wrong_type(self):
         pass

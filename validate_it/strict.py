@@ -136,8 +136,10 @@ class StrictType(Validator):
 
     def set_defaults(self, value, **kwargs) -> Tuple[str, Any]:
         if value is None and self.default is not None:
-            if callable(self.default):
+            if callable(self.default) and self.default not in [dict, list]:
                 value = self.default(value, kwargs.get("meta", None))
+            elif callable(self.default):
+                value = self.default()
             else:
                 value = self.default
 
@@ -721,19 +723,24 @@ class Schema(StrictType):
 
         _copy = value.__class__()
 
-        for _name, _field in self.get_fields().items():
-            _value = value.get(_field.alias) if _field.alias else value.get(_name)
-            _error, _value = _field.validate_it(_value, **kwargs)
+        for _origin_name, _field in self.get_fields().items():
+            _search_name = _field.alias if _field.alias else _origin_name
+            _schema_keys.add(_search_name)
+
+            _raw_value = value.get(_search_name)
+            _error, _nested_value = _field.validate_it(_raw_value, **kwargs)
 
             if _error:
-                _errors[_name] = _error
+                _errors[_search_name] = _error
+
+            # {} -> {} instead {} -> {'a': None}, if schema has not required field 'a'
+            if _search_name not in value.keys() and value.get(_search_name) is None and _nested_value is None:
+                continue
 
             if _field.rename:
-                _copy[_field.rename] = _value
+                _copy[_field.rename] = _nested_value
             else:
-                _copy[_name] = _value
-
-            _schema_keys.add(_name)
+                _copy[_origin_name] = _nested_value
 
         for _unknown_item in _value_keys - _schema_keys:
             if not kwargs.get("strip_unknown", False):
