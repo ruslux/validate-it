@@ -1,28 +1,11 @@
 import collections
-
 from dataclasses import dataclass, field
 from datetime import datetime
-from inspect import getmembers, isroutine, isclass
+from inspect import isclass
 from typing import Union, List, Callable, Tuple, Any, Type, Dict
 
 from validate_it.base import Validator
-
-
-def choices_from_enum(cls):
-    attributes = getmembers(
-        cls,
-        lambda _field: not isroutine(_field)
-    )
-
-    choices = [
-        (value, name.replace("_", " ").lower().capitalize())
-        for name, value in attributes
-        if not name.startswith("__") and not name.endswith("__")
-    ]
-
-    choices.sort(key=lambda x: x[1])
-
-    return tuple(choices)
+from validate_it.utils import choices_from_enum
 
 
 def update_definitions(instance, schema, definitions):
@@ -796,5 +779,4 @@ __all__ = [
     "DatetimeField",
     "Schema",
     "SchemaField",
-    "choices_from_enum",
 ]
