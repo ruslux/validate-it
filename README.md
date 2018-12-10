@@ -99,6 +99,19 @@ from validate_it import *
 
 errors, value = DatetimeField().validate_it(datetime.now())
 assert not errors
+
+def parser(value):
+    try:
+        return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+    except Exception as e:
+        return value
+        
+
+errors, value = DatetimeField(
+    parser=parser
+).validate_it('2018-12-10T15:08:46.994Z')
+assert not errors
+assert isinstance(value, datetime)
 ```
 
 * ``Schema``

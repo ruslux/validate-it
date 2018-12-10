@@ -729,7 +729,17 @@ class DatetimeFieldTestCase(TestCase):
         pass
 
     def test_convert(self):
-        pass
+        _value = '2018-12-10T15:08:46.994Z'
+
+        def parser(value):
+            try:
+                return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
+            except Exception as e:
+                return value
+
+        error, value = DatetimeField(parser=parser).validate_it(_value, convert=True)
+        assert value.isoformat() == datetime(2018, 12, 10, 15, 8, 46, microsecond=994000).isoformat()
+        assert not error
 
 
 class AnyTestCase(TestCase):

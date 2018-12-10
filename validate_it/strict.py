@@ -606,12 +606,21 @@ class DatetimeField(StrictType):
 
     base_type: Type = datetime
     default: Union[datetime, None] = None
+    parser: Union[Callable, None] = None
 
     def get_jsonschema_type(self):
         return "string"
 
     def get_jsonschema_format(self):
         return self.jsonschema_options.get("format", "date-time")
+
+    def convert(self, value, **kwargs):
+        value = super().convert(value, **kwargs)
+
+        if self.parser:
+            value = self.parser(value)
+
+        return value
 
 
 @dataclass

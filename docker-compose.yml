@@ -2,7 +2,7 @@ version: '2'
 
 services:
   test:
-    image: test
+    image: validate_it
     build:
       context: .
       dockerfile: Dockerfile
