@@ -1,5 +1,7 @@
 from unittest import TestCase
 
+import attr
+
 from validate_it import *
 
 
@@ -115,20 +117,24 @@ class TestClone(TestCase):
             EARTH = 3
             AIR = 4
 
+        @attr.s(auto_attribs=True)
         class Skill(Schema):
             title = StrField(min_length=3, max_length=32, required=True, jsonschema_options={"title": "Title"})
             power = FloatField(min_value=0.1, max_value=100.0, required=True, jsonschema_options={"title": "Power"})
             aspect = IntField(enum=Aspect, required=True, jsonschema_options={"title": "Aspect"})
 
+        @attr.s(auto_attribs=True)
         class Enchant(Schema):
             power = FloatField(min_value=0.1, max_value=100.0, required=True,
                                jsonschema_options={"title": "Power"})
             aspect = IntField(enum=Aspect, required=True, jsonschema_options={"title": "Aspect"})
 
+        @attr.s(auto_attribs=True)
         class PlayerItem(Schema):
             item_id = IntField(min_value=0, required=True, jsonschema_options={"title": "Item_id"})
             enchant = Enchant(required=False, jsonschema_options={"title": "Enchant"})
 
+        @attr.s(auto_attribs=True)
         class Player(Schema):
             id = IntField(min_value=0, required=True)
             _id = StrField(min_length=24, max_length=24, required=True)

@@ -1,8 +1,9 @@
 import collections
-from dataclasses import dataclass, field
 from datetime import datetime
 from inspect import isclass
 from typing import Union, List, Callable, Tuple, Any, Type, Dict
+
+import attr
 
 from validate_it.base import Validator
 from validate_it.utils import choices_from_enum
@@ -39,16 +40,16 @@ def update_definitions(instance, schema, definitions):
     }
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class StrictType(Validator):
     required: bool = False
     default: Union[object, None] = None
-    only: Union[Callable, list] = field(default_factory=list)
+    only: Union[Callable, list] = attr.Factory(list)
     enum: Any = None
     choices: List[Tuple[Any, Any]] = None
-    validators: List[Callable] = field(default_factory=list)
+    validators: List[Callable] = attr.Factory(list)
 
-    def __post_init__(self):
+    def __attrs_post_init__(self):
         if self.enum and self.enum is not None:
             if self.choices:
                 raise TypeError(
@@ -212,7 +213,7 @@ class StrictType(Validator):
         return _schema
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class BoolField(StrictType):
     """
     Поле для значений типа ``bool``
@@ -225,7 +226,7 @@ class BoolField(StrictType):
         return "boolean"
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class AmountMixin:
     min_value: Union[Any, None] = None
     max_value: Union[Any, None] = None
@@ -242,7 +243,7 @@ class AmountMixin:
         return {}, value
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class __Number(AmountMixin, StrictType):
     def representation(self, **kwargs):
         _data = super().representation(**kwargs)
@@ -270,7 +271,7 @@ class __Number(AmountMixin, StrictType):
         return _schema
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class IntField(__Number):
     """
     Поле для значений типа ``int``
@@ -285,7 +286,7 @@ class IntField(__Number):
         return "integer"
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class FloatField(__Number):
     """
     Поле для значений типа ``float``
@@ -300,7 +301,7 @@ class FloatField(__Number):
         return "number"
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class LengthMixin:
     min_length: Union[int, None] = None
     max_length: Union[int, None] = None
@@ -317,7 +318,7 @@ class LengthMixin:
         return {}, value
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class StrField(LengthMixin, StrictType):
     """
     Поле для значений типа ``str``
@@ -355,7 +356,7 @@ class StrField(LengthMixin, StrictType):
         return _schema
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class ListField(LengthMixin, StrictType):
     """
     Поле для значений типа ``list``, который хранит в себе значения типа указанного в ``nested``
@@ -446,7 +447,7 @@ class ListField(LengthMixin, StrictType):
         return "array"
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class TupleField(StrictType):
     """
     Поле для значений типа ``tuple``, который хранит в себе значения, которые строго соответсвуют порядку полей,
@@ -476,9 +477,9 @@ class TupleField(StrictType):
 
     base_type: Type = tuple
     default: Union[tuple, None] = None
-    nested: List[Validator] = field(default_factory=list)
+    nested: List[Validator] = attr.Factory(list)
 
-    def __post_init__(self):
+    def __attrs_post_init__(self):
         for _element in self.nested:
             if not isinstance(_element, Validator):
                 raise TypeError(f"`nested` element must be `field.Validator` instance")
@@ -527,7 +528,7 @@ class TupleField(StrictType):
         return "array"
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class DictField(StrictType):
     """
     Поле для значений типа ``dict``, который хранит в себе значения типа указанного в ``nested``.
@@ -598,7 +599,7 @@ class DictField(StrictType):
         return _errors, _new_value
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class DatetimeField(StrictType):
     """
     Поле для значений типа ``datetime``
@@ -623,7 +624,7 @@ class DatetimeField(StrictType):
         return value
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class Schema(StrictType):
     """
     Наряду с ``AnySchema`` класс ``Schema`` является основным инструментом для валидации документов.

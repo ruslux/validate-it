@@ -1,11 +1,12 @@
-from dataclasses import field, dataclass
 from typing import Tuple, List
+
+import attr
 
 from validate_it.strict import StrictType
 from validate_it.base import Validator
 
 
-@dataclass
+@attr.s(auto_attribs=True)
 class UnionType(StrictType):
     """
     Схема для которой можно задать несколько допустимых типов.
@@ -22,9 +23,9 @@ class UnionType(StrictType):
 
     """
 
-    alternatives: List[Validator] = field(default_factory=list)
+    alternatives: List[Validator] = attr.Factory(list)
 
-    def __post_init__(self):
+    def __attrs_post_init__(self):
         if not len(self.alternatives):
             raise ValueError(f"UnionType `alternatives` must be not empty")
 

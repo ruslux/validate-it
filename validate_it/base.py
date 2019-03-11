@@ -1,15 +1,16 @@
-from dataclasses import dataclass, field
 from typing import Tuple, Any, Type
 
+import attr
 
-@dataclass
+
+@attr.s(auto_attribs=True)
 class Validator:
     base_type: Type = object
     field_name: str = ""
     alias: str = ""
     rename: str = ""
     description: str = ""
-    jsonschema_options: dict = field(default_factory=dict)
+    jsonschema_options: dict = attr.Factory(dict)
 
     class Meta:
         pass
