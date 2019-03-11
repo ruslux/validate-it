@@ -388,7 +388,7 @@ assert expand(_out_data) == {
 ```
 
 ### <a name="requirements"/>Requirements</a>
-Tested with `python3.7`
+Tested with `python3.6`, `pypy3.6-7.0.0`
 
 ### <a name="contribution"/>Contribution how-to</a>
 ###### Run tests:
