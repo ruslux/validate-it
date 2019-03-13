@@ -47,6 +47,9 @@ class UnionType(StrictType):
             else:
                 _errors[_alternative.__class__.__name__] = _error
 
+        if kwargs.get("short_debug", False):
+            _errors = "All options are wrong"
+
         return _errors, value
 
 
