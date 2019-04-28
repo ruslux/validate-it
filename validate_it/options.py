@@ -52,7 +52,7 @@ class Options:
         max_length: Optional[Union[int, Callable]] = None,
         alias: Optional[Union[str, Callable]] = None,
         rename: Optional[Union[str, Callable]] = None,
-        validators: Optional[List[Iterable[Callable]]] = None,
+        validators: Optional[Iterable[Callable]] = None,
         parser: Optional[Callable] = None
     ):
 
