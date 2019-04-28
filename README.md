@@ -154,12 +154,12 @@ from validate_it import *
 from accordion import compress
 
 
-class CustomMapper(Schema):
+class Player(Schema):
     nickname: str = Options(alias="info.nickname")
-    int: int = Options(alias="characteristics/0")
-    dex: int = Options(alias="characteristics/1")
-    str: int = Options(alias="characteristics/2")
-    vit: int = Options(alias="characteristics/3")
+    intelligence: int = Options(alias="characteristics/0")
+    dexterity: int = Options(alias="characteristics/1")
+    strength: int = Options(alias="characteristics/2")
+    vitality: int = Options(alias="characteristics/3")
 
 _in_data = {
     "info": {
@@ -173,14 +173,14 @@ _in_data = {
     ]
 }
 
-mapper = CustomMapper.from_dict(compress(_in_data))
+mapper = Player.from_dict(compress(_in_data))
 
 assert mapper.to_dict() == {
     "nickname": "Killer777", 
-    "int": 7, 
-    "dex": 55, 
-    "str": 11, 
-    "vit": 44
+    "intelligence": 7, 
+    "dexterity": 55, 
+    "strength": 11, 
+    "vitality": 44
 }
 ```
 
@@ -192,17 +192,17 @@ from accordion import expand
 
 class CustomMapper(Schema):
     nickname: str = Options(rename="info.nickname")
-    int: int = Options(rename="characteristics/0")
-    dex: int = Options(rename="characteristics/1")
-    str: int = Options(rename="characteristics/2")
-    vit: int = Options(rename="characteristics/3")
+    intelligence: int = Options(rename="characteristics/0")
+    dexterity: int = Options(rename="characteristics/1")
+    strength: int = Options(rename="characteristics/2")
+    vitality: int = Options(rename="characteristics/3")
 
 _in_data = {
     "nickname": "Killer777", 
-    "int": 7, 
-    "dex": 55, 
-    "str": 11, 
-    "vit": 44
+    "intelligence": 7, 
+    "dexterity": 55, 
+    "strength": 11, 
+    "vitality": 44
 }
 
 mapper = CustomMapper.from_dict(_in_data)
