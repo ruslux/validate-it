@@ -2,7 +2,7 @@ from os import path
 
 from setuptools import setup, find_packages
 
-version = "0.5.0"
+version = "0.5.1"
 
 here = path.abspath(path.dirname(__file__))
 
@@ -13,7 +13,7 @@ setup(
     name="validate-it",
     packages=find_packages(),
     version=version,
-    description="Yet another schema validator",
+    description="Schema validator built on top of the typing module",
     long_description=long_description,
     long_description_content_type='text/markdown',
     author="Ruslan Roskoshnyj",

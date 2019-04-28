@@ -13,7 +13,7 @@
 - [Requirements](#requirements)
 
 ### <a name="about"/>About</a>
-Schema validator built on top of the typing module.
+Schema validator built on top of the typing module
 
 
 ### <a name="installation"/>Installation</a>
