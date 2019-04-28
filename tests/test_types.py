@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple, Iterable
 from unittest import TestCase
 
 from validate_it import Schema, Options
@@ -226,3 +226,55 @@ class TypesTestCase(TestCase):
         self.assertEqual(p.name, "John")
         self.assertEqual(p.items[0].title, "Rose")
         self.assertEqual(p.skills['ice'].level, 2)
+
+    def test_not_specified(self):
+        class A(Schema):
+            a: list
+            b: dict
+
+        with self.assertRaises(TypeError):
+            A.from_dict({'a': {1: 1}, 'b': {1: 1}})
+
+        with self.assertRaises(TypeError):
+            A.from_dict({'a': [1, 1], 'b': [1, 1]})
+
+        self.assertEqual(
+            A.from_dict({'a': [1, 1], 'b': {1: 1}}).to_dict(),
+            {
+                'a': [1, 1],
+                'b': {1: 1}
+            }
+        )
+
+    def test_tuple(self):
+        class A(Schema):
+            a: tuple
+            b: Tuple[int, int, float]
+
+        with self.assertRaises(TypeError):
+            A.from_dict({"a": [1, 2, 3], 'b': {1, 2, 3.0}})
+
+        with self.assertRaises(TypeError):
+            A.from_dict({"a": {1, 2, 3}, 'b': {1, 2, 3}})
+
+    def test_iterable(self):
+        class A(Schema):
+            a: Iterable
+
+        with self.assertRaises(TypeError):
+            A.from_dict({'a': 1})
+
+        self.assertEqual(
+            A.from_dict({'a': 'abc'}).to_dict(),
+            {'a': 'abc'}
+        )
+
+        self.assertEqual(
+            A.from_dict({'a': [1, 2, 3]}).to_dict(),
+            {'a': [1, 2, 3]}
+        )
+
+        self.assertEqual(
+            A.from_dict({'a': {1: 1, 2: 2}}).to_dict(),
+            {'a': {1: 1, 2: 2}}
+        )
