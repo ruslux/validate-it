@@ -125,7 +125,7 @@ _expected = {
     "convert": "1"
 }
 
-car = Car.from_dict()
+car = Car.from_dict(_data)
 assert car.to_dict() == _expected
 ```
 
@@ -205,7 +205,7 @@ _in_data = {
     "vit": 44
 }
 
-mapper = CustomMapper().from_dict(_in_data)
+mapper = CustomMapper.from_dict(_in_data)
 
 assert expand(mapper.to_dict()) == {
     "info": {
