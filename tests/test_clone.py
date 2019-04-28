@@ -1,48 +1,39 @@
 from unittest import TestCase
 
-from validate_it import Schema, IntField, StrField
+from validate_it import Schema, Options
 
 
 class First(Schema):
-    a = IntField()
-    b = IntField()
+    a: int = 0
+    b: int = 0
+
+    class Meta:
+        strip_unknown = True
 
 
-Second = First().filter_fields("a")
-Third = First().exclude_fields("a")
-
-
-class Fourth(Schema):
-    a = StrField()
-
-
-Fifth = Fourth().add_fields(_id=IntField(default=12))
+Second = First.clone(include=["a"])
+Third = First.clone(exclude=["a"])
+# try replace
+Fourth = First.clone(add=[('a', str, Options(parser=str))])
+# add
+Fifth = First.clone(add=[('_id', int, Options(default=1))])
 
 
 class TestClone(TestCase):
     def test_clone(self):
-        _data = {"a": 1, "b": 2}
+        data = {"a": 1, "b": 2}
 
-        _error, _validated = First().validate_it(_data)
+        first = First(**data)
+        self.assertEquals(data, first.to_dict())
 
-        assert not _error
-        self.assertEquals(_data, _validated)
+        second = Second(**data)
+        self.assertEquals({"a": 1}, second.to_dict())
 
-        _error, _validated = Second().validate_it(_data, strip_unknown=True)
+        third = Third(**data)
+        self.assertEquals({"b": 2}, third.to_dict())
 
-        assert not _error
-        self.assertEquals({"a": 1}, _validated)
+        fourth = Fourth(**data)
+        self.assertEquals({"a": "1", "b": 2}, fourth.to_dict())
 
-        _error, _validated = Third().validate_it(_data, strip_unknown=True)
-
-        assert not _error
-        self.assertEquals({"b": 2}, _validated)
-
-        _error, _validated = Fourth().validate_it(_data, convert=True, strip_unknown=True)
-
-        assert not _error
-        self.assertEquals({"a": "1"}, _validated)
-
-        _error, _validated = Fifth().validate_it(_data, convert=True, strip_unknown=True)
-        assert not _error
-        self.assertEquals({"a": "1", "_id": 12}, _validated)
+        fifth = Fifth(**data)
+        self.assertEquals({"a": 1, "b": 2, "_id": 1}, fifth.to_dict())

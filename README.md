@@ -2,20 +2,18 @@
 
 [![Build Status](https://travis-ci.org/ruslux/validate-it.svg?branch=master)](https://travis-ci.org/ruslux/validate-it) 
 [![Coverage Status](https://coveralls.io/repos/github/ruslux/validate-it/badge.svg?branch=master)](https://coveralls.io/github/ruslux/validate-it)
-[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/ruslux/validate-it/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/ruslux/validate-it)
 [![PyPI version](https://badge.fury.io/py/validate-it.svg)](https://badge.fury.io/py/validate-it)
 
 - [About](#about)
 - [Installation](#installation)
-- [Available fields](#fields)
-- [Keyword arguments](#kwargs)
+- [Supported fields](#fields)
 - [Validation example](#validation-example)
 - [Simple mapping example](#simple-mapping-example)
 - [Nested mapping example](#nested-mapping-example)
 - [Requirements](#requirements)
 
 ### <a name="about"/>About</a>
-Yet another schema validator.
+Schema validator built on top of the typing module.
 
 
 ### <a name="installation"/>Installation</a>
@@ -24,257 +22,78 @@ With pip:
 pip install validate-it
 ```
 
-### <a name="fields"/>Available fields</a>
-* ``BoolField``
+### <a name="fields"/>Supported fields</a>
 ```python
-from validate_it import *
-
-
-error, value = BoolField(default=True).validate_it(None)
-assert value
-```
-* ``IntField``
-```python
-from validate_it import *
-
-
-error, value = IntField().validate_it('10', convert=True)
-assert value == 10
-```
-* ``FloatField``
-```python
-from validate_it import *
-
-
-error, value = FloatField().validate_it(9, convert=True)
-assert value == 9.0
-```
-* ``ListField``
-```python
-from validate_it import *
-
-
-errors, value = ListField(
-    nested=IntField()
-).validate_it([1, 2, 3, 4])
-
-assert value == [1, 2, 3, 4]
-assert not errors
-```
-* ``TupleField``
-```python
-from validate_it import *
-
-
-errors, value = TupleField(
-    nested=(
-        IntField(),
-        FloatField(),
-        StrField()
-    )
-).validate_it((1, 2.0, '3'))
-
-assert value == (1, 2.0, '3')
-assert not errors
-```
-* ``DictField``
-```python
-from validate_it import *
-
-
-errors, value = DictField(
-    key=IntField(),
-    nested=IntField()
-).validate_it({'1': 1, '2': 2, '3': 3})
-
-assert value == {1: 1, 2: 2, 3: 3}
-assert not errors
-```
-* ``DatetimeField``
-```python
+import re
 from datetime import datetime
-
-from validate_it import *
-
-
-errors, value = DatetimeField().validate_it(datetime.now())
-assert not errors
-
-def parser(value):
-    try:
-        return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ')
-    except Exception as e:
-        return value
-        
-
-errors, value = DatetimeField(
-    parser=parser
-).validate_it('2018-12-10T15:08:46.994Z')
-assert not errors
-assert isinstance(value, datetime)
-```
-
-* ``Schema``
-```python
-from validate_it import *
+from typing import Dict, List, Union, Optional
+from validate_it import Schema, Options
 
 
-class Author(Schema):
-    first_name = StrField()
-    last_name = StrField()
-
-class Post(Schema):
-    title = StrField()
-    text = StrField()
-    author = Author()
-
-errors, value = Post().validate_it(
-    {
-        "title": "Hello",
-        "text": "World",
-        "author": {
-            "first_name": "John",
-            "last_name": "Smith"
-        }
-    }
-)
-assert not errors
-```
-
-
-### <a name="kwargs"/>Keyword arguments</a>
-#### All fields:
-* ``required`` - value is required (default is ``False``)
-```python
-from validate_it import *
-
-
-a = IntField(required=True)
-b = IntField(required=False)
-```
-* ``only`` - list of available values (can be callable, default allow any)
-```python
-from validate_it import *
-
-
-a = IntField(only=[1, 2, 3])
-b = IntField(only=lambda: range(0, 100))
-```
-* ``default`` - set default if value is ``None`` (can be callable, default is ``None``)
-```python
-from validate_it import *
-
-
-a = IntField(default=1)
-b = IntField(default=lambda: 1 + 1)
-```
-* ``validators`` - list of custom callable validators
-```python
-from validate_it import *
-
-
-a = IntField(
-    validators=[
-        lambda value, *_: 0 < value < 10,
-        lambda value, *_: value % 2,
-    ]
-)
-```
-#### StrField, ListField:
-* ``min_length`` - minimal sequence length (default is ``None``)
-```python
-from validate_it import *
-
-
-a = StrField(min_length=2)
-```
-* ``max_length`` - maximum sequence length (default is ``None``)
-```python
-from validate_it import *
-
-
-a = ListField(max_length=2)
-```
-#### ListField, DictField:
-* ``nested`` - required ``Validator`` subclass for value
-```python
-from validate_it import *
-
-
-a = ListField(nested=IntField())
-```
-
-#### TupleField:
-* ``nested`` - tuple of ``Validator`` subclasses
-```python
-from validate_it import *
-
-
-a = TupleField(
-    nested=(
-        IntField(),
-        IntField(),
-        StrField(),
-    )
-)
-
-# aliases
-class HeaderSize(IntField):
+class IsNotEmailError(Exception):
     pass
 
-class Header(StrField):
-    pass
 
-class Message(TupleField):
-    pass
+def is_email(value):
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", value):
+        raise IsNotEmailError()
 
-b = Message(
-    nested=(
-        HeaderSize(),
-        Header()
-    )
-)
+
+class Example(Schema):
+    # required fields
+    field_a: datetime
+    field_b: float
+    
+    # required fields with defaults
+    field_c: str = "unknown"
+    field_d: int = 9
+    
+    # required fields with nested types
+    field_e: Dict[int, str]
+    field_f: List[int]
+    
+    # optional fields
+    field_g: Optional[int]
+    field_h: Union[int, None] # equivalent of Optional[int]
+    
+    # with some validators:
+    fields_i: int = Options(default=0, max_value=100, min_value=100)
+    fields_j: str = Options(size=10)
+    fields_k: str = Options(min_length=10, max_length=20)
+    fields_l: List[str] = Options(size=5)
+    fields_m: str = Options(validators=[is_email])
+    fields_n: int = Options(allowed=[1, 2, 3])
+    
+    # with search (input) alias:
+    fields_o: int = Options(alias="field_n")
+    
+    # with rename (output) alias:
+    fields_p: int = Options(rename="field_q")
 ```
-
-#### IntField, FloatField:
-* ``min_value``
-```python
-from validate_it import *
-
-
-a = IntField(min_value=2)
-```
-* ``max_value``
-```python
-from validate_it import *
-
-
-a = IntField(max_value=2)
-```
-
 
 ### <a name="validation-example"/>Validation example</a>
 ```python
+from typing import List
 from validate_it import *
 
 
 class Owner(Schema):
-    first_name = StrField(required=True)
-    last_name = StrField(required=True)
+    first_name: str
+    last_name: str
 
 
 class Characteristics(Schema):
-    cc = FloatField(required=True, min_value=0.0)
-    hp = IntField(required=True, min_value=0)
+    cc: float = Options(min_value=0.0)
+    hp: int = Options(min_value=0)
 
 
 class Car(Schema):
-    name = StrField(required=True, min_length=2, max_length=20)
-    owners = ListField(required=True, nested=Owner())
-    characteristics = Characteristics(required=True, default={"cc": 0.0, "hp": 0})
-    convert = BoolField(required=True)
+    name: str = Options(min_length=2, max_length=20)
+    owners: List[Owner]
+    characteristics: Characteristics = Options(default={"cc": 0.0, "hp": 0})
+    convert: bool = Options(parser=bool)
 
-    
+
 _data = {
     "name": "Shelby GT500",
     "owners": [
@@ -291,8 +110,23 @@ _data = {
     "convert": 1 
 }
 
-_errors, _data = Car().validate_it(_data, convert=True, strip_unknown=True)
-assert not _errors
+_expected = {
+    "name": "Shelby GT500",
+    "owners": [
+        {
+            "first_name": "Randall",
+            "last_name": "Raines",
+        }
+    ],
+    "characteristics": {
+        "cc": 4.7,
+        "hp": 306
+    },
+    "convert": "1"
+}
+
+car = Car.from_dict()
+assert car.to_dict() == _expected
 ```
 
 ### <a name="simple-mapping-example"/>Simple mapping example</a>
@@ -301,17 +135,17 @@ from validate_it import *
 
 
 class CustomMapper(Schema):
-    first_name = StrField(alias="f")
-    last_name = StrField(alias="l")
+    first_name: str = Options(alias="f")
+    last_name: str = Options(alias="l")
 
 _in_data = {
     "f": "John",
     "l": "Connor"
 }
 
-_errors, _out_data = CustomMapper().validate_it(_in_data, strip_unknown=True)
+mapper = CustomMapper.from_dict(_in_data)
 
-assert _out_data == {"first_name": "John", "last_name": "Connor"}
+assert mapper.to_dict() == {"first_name": "John", "last_name": "Connor"}
 ```
 
 ### <a name="nested-mapping-example"/>Nested mapping example</a>
@@ -321,11 +155,11 @@ from accordion import compress
 
 
 class CustomMapper(Schema):
-    nickname = StrField(alias="info.nickname")
-    int = IntField(alias="characteristics/0")
-    dex = IntField(alias="characteristics/1")
-    str = IntField(alias="characteristics/2")
-    vit = IntField(alias="characteristics/3")
+    nickname: str = Options(alias="info.nickname")
+    int: int = Options(alias="characteristics/0")
+    dex: int = Options(alias="characteristics/1")
+    str: int = Options(alias="characteristics/2")
+    vit: int = Options(alias="characteristics/3")
 
 _in_data = {
     "info": {
@@ -339,9 +173,9 @@ _in_data = {
     ]
 }
 
-_errors, _out_data = CustomMapper().validate_it(compress(_in_data), strip_unknown=True)
+mapper = CustomMapper.from_dict(compress(_in_data))
 
-assert _out_data == {
+assert mapper.to_dict() == {
     "nickname": "Killer777", 
     "int": 7, 
     "dex": 55, 
@@ -357,11 +191,11 @@ from accordion import expand
 
 
 class CustomMapper(Schema):
-    nickname = StrField(rename="info.nickname")
-    int = IntField(rename="characteristics/0")
-    dex = IntField(rename="characteristics/1")
-    str = IntField(rename="characteristics/2")
-    vit = IntField(rename="characteristics/3")
+    nickname: str = Options(rename="info.nickname")
+    int: int = Options(rename="characteristics/0")
+    dex: int = Options(rename="characteristics/1")
+    str: int = Options(rename="characteristics/2")
+    vit: int = Options(rename="characteristics/3")
 
 _in_data = {
     "nickname": "Killer777", 
@@ -371,10 +205,9 @@ _in_data = {
     "vit": 44
 }
 
-_errors, _out_data = CustomMapper().validate_it(_in_data, strip_unknown=True)
+mapper = CustomMapper().from_dict(_in_data)
 
-
-assert expand(_out_data) == {
+assert expand(mapper.to_dict()) == {
     "info": {
         "nickname": "Killer777",
     },
@@ -388,7 +221,7 @@ assert expand(_out_data) == {
 ```
 
 ### <a name="requirements"/>Requirements</a>
-Tested with `python3.6`, `pypy3.6-7.0.0`
+Tested with `python3.6`, `python3.7`, `pypy3.6-7.0.0`
 
 ### <a name="contribution"/>Contribution how-to</a>
 ###### Run tests:

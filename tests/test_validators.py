@@ -1,19 +1,25 @@
 import re
 from unittest import TestCase
 
-from validate_it import StrField
+from validate_it import Schema, Options
 
 
-def is_email(value, **kwargs):
+class IsNotEmailError(Exception):
+    pass
+
+
+def is_email(value):
     if not re.match(r"[^@]+@[^@]+\.[^@]+", value):
-        return "Invalid email", value
+        raise IsNotEmailError()
 
-    return "", value
+
+class TypeWithValidator(Schema):
+    email: str = Options(validators=[is_email])
 
 
 class TestValidators(TestCase):
     def test_validators(self):
-        _error, _value = StrField(required=True, validators=[is_email]).validate_it("notEmail")
+        with self.assertRaises(IsNotEmailError):
+            TypeWithValidator(email="notEmail")
 
-        assert _error
-        self.assertEquals("Invalid email", _error)
+        TypeWithValidator(email="it@is.email")
