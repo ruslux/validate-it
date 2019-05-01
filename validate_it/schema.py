@@ -1,6 +1,6 @@
 import sys
 import uuid
-from typing import Union, List, Tuple, Type, Dict
+from typing import Union, List, Tuple, Type, Dict, TypeVar, Iterable
 
 from validate_it.options import Options
 
@@ -122,8 +122,11 @@ def _unwrap(value, t):
             for k, v in value.items()
         }
 
-    if issubclass(t, Schema):
-        return value.to_dict()
+    try:
+        if issubclass(t, Schema):
+            return value.to_dict()
+    except TypeError:
+        pass
 
     return value
 
@@ -146,13 +149,19 @@ def _wrap(value, t):
             for k, v in value.items()
         }
 
-    if issubclass(t, Schema) and _is_compatible(value, dict):
-        return t.from_dict(value)
+    try:
+        if issubclass(t, Schema) and _is_compatible(value, dict):
+            return t.from_dict(value)
+    except TypeError:
+        pass
 
     return value
 
 
 def _is_compatible(value, t):
+    if isinstance(t, TypeVar):
+        return True
+
     if _is_generic_alias(t, Union):
         for arg in t.__args__:
             if _is_compatible(value, arg):
@@ -171,10 +180,16 @@ def _is_compatible(value, t):
                 return False
         return True
 
-    if issubclass(t, Schema) and _is_compatible(value, dict):
-        return True
+    try:
+        if issubclass(t, Schema) and _is_compatible(value, dict):
+            return True
+    except TypeError:
+        pass
 
-    return isinstance(value, t)
+    try:
+        return isinstance(value, t)
+    except TypeError:
+        return False
 
 
 def getattr_or_default(obj, k, default=None):

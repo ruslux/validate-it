@@ -257,24 +257,13 @@ class TypesTestCase(TestCase):
         with self.assertRaises(TypeError):
             A.from_dict({"a": {1, 2, 3}, 'b': {1, 2, 3}})
 
-    def test_iterable(self):
+    def test_typevar(self):
         class A(Schema):
-            a: Iterable
+            a: Optional[List]
+            b: Optional[List[int]]
+            c: Optional[Dict]
+            d: Optional[Dict[int, int]]
 
-        with self.assertRaises(TypeError):
-            A.from_dict({'a': 1})
+        data = {'a': [], 'b': [1], 'c': {'a': 'b'}, 'd': {1: 2}}
 
-        self.assertEqual(
-            A.from_dict({'a': 'abc'}).to_dict(),
-            {'a': 'abc'}
-        )
-
-        self.assertEqual(
-            A.from_dict({'a': [1, 2, 3]}).to_dict(),
-            {'a': [1, 2, 3]}
-        )
-
-        self.assertEqual(
-            A.from_dict({'a': {1: 1, 2: 2}}).to_dict(),
-            {'a': {1: 1, 2: 2}}
-        )
+        assert A.from_dict(data).to_dict() == data
