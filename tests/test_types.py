@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Tuple, Iterable
+from typing import Optional, List, Dict, Tuple
 from unittest import TestCase
 
 from validate_it import Schema, Options
@@ -106,7 +106,7 @@ class TypesTestCase(TestCase):
         _data = {}
 
         with self.assertRaises(TypeError):
-            A.from_dict(_data)
+            print(A.from_dict(_data).to_dict())
 
     def test_not_required_default(self):
         class A(Schema):
@@ -178,7 +178,7 @@ class TypesTestCase(TestCase):
         A.from_dict({'a': 10, 'b': 20})
 
         with self.assertRaises(ValueError):
-            A.from_dict({'a': 9, 'b': 20})
+            print(A.from_dict({'a': 9, 'b': 20}).to_dict())
 
         with self.assertRaises(ValueError):
             A.from_dict({'a': 10, 'b': 21})
@@ -267,3 +267,29 @@ class TypesTestCase(TestCase):
         data = {'a': [], 'b': [1], 'c': {'a': 'b'}, 'd': {1: 2}}
 
         assert A.from_dict(data).to_dict() == data
+
+    def test_descriptor(self):
+        class A(Schema):
+            a: Optional[List]
+            b: Optional[List[int]]
+            c: Optional[Dict]
+            d: Optional[Dict[int, int]]
+
+        a = A(a=[], b=[1], c={'a': 'b'}, d={1: 2})
+
+        assert a.to_dict() == {'a': [], 'b': [1], 'c': {'a': 'b'}, 'd': {1: 2}}
+
+        with self.assertRaises(TypeError):
+            a.a = {}
+
+        a.a = [100]
+
+        assert a.a == [100]
+
+    def test_serializer(self):
+        class A(Schema):
+            a: float = Options(parser=float, serializer=int)
+
+        a = A(a="1.1")
+        assert a.a == 1.1
+        assert a.to_dict() == {'a': 1}

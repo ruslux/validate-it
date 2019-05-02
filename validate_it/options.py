@@ -53,7 +53,8 @@ class Options:
         alias: Optional[Union[str, Callable]] = None,
         rename: Optional[Union[str, Callable]] = None,
         validators: Optional[Iterable[Callable]] = None,
-        parser: Optional[Callable] = None
+        parser: Optional[Callable] = None,
+        serializer: Optional[Callable] = None
     ):
 
         self.required = required
@@ -68,6 +69,7 @@ class Options:
         self.rename = rename
         self.validators = validators
         self.parser = parser
+        self.serializer = serializer
 
         self.__type__ = None
 
