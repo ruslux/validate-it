@@ -69,6 +69,12 @@ class Example(Schema):
     
     # with rename (output) alias:
     fields_p: int = Options(rename="field_q")
+    
+    # with serializer used in #to_dict(), outgoing value is str type
+    fields_q: int = Options(serializer=str)
+    
+    # with parser used in #from_dict() or direct setattr, incoming value will be parsed as int
+    fields_r: int = Options(parser=int)
 ```
 
 ### <a name="validation-example"/>Validation example</a>
@@ -76,6 +82,19 @@ class Example(Schema):
 from typing import List
 from validate_it import *
 
+
+class Simple(Schema):
+    a: int
+    b: int
+    
+simple = Simple(a=1, b=2)
+simple.a = 2
+simple.b = 3
+
+try:
+    simple.a = 'not int'
+except TypeError:
+    print("Wrong type")
 
 class Owner(Schema):
     first_name: str
