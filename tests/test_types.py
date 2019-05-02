@@ -293,3 +293,14 @@ class TypesTestCase(TestCase):
         a = A(a="1.1")
         assert a.a == 1.1
         assert a.to_dict() == {'a': 1}
+
+    def test_unexpected(self):
+        class A(Schema):
+            a: float = Options(parser=float, serializer=int)
+
+            class Meta:
+                strip_unknown = True
+
+        a = A(a="1.1", b="1.1")
+        assert a.a == 1.1
+        assert a.to_dict() == {'a': 1}
