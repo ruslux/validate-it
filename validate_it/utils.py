@@ -222,3 +222,8 @@ def choices_from_enum(cls):
     choices.sort(key=lambda x: x[1])
 
     return tuple(choices)
+
+
+__all__ = [
+    "choices_from_enum"
+]
