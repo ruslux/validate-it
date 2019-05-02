@@ -68,3 +68,11 @@ class Options:
         self.rename = rename
         self.validators = validators
         self.parser = parser
+
+        self.__type__ = None
+
+    def set_type(self, t):
+        self.__type__ = t
+
+    def get_type(self):
+        return self.__type__

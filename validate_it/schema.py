@@ -1,6 +1,6 @@
-import sys
 import uuid
-from typing import Union, List, Tuple, Type, Dict, TypeVar, Iterable
+from inspect import getmembers, isroutine, isclass
+from typing import Union, List, Tuple, Type, Dict, TypeVar, Any
 
 from validate_it.options import Options
 
@@ -9,6 +9,20 @@ def _is_generic_alias(t, classes):
     if not isinstance(classes, (list, tuple)):
         classes = (classes,)
     return hasattr(t, '__origin__') and t.__origin__ in classes
+
+
+class SchemaVar:
+    def __init__(self, value=None, options=None) -> None:
+        self._current_value = value
+        self._confirmed_value = None
+
+        self.options = options
+
+    def __get__(self, instance, owner):
+        return self._current_value
+
+    def __set__(self, instance, value):
+        self._current_value = value
 
 
 def _repr(t, o):
@@ -159,6 +173,9 @@ def _wrap(value, t):
 
 
 def _is_compatible(value, t):
+    if t is Any:
+        return True
+
     if isinstance(t, TypeVar):
         return True
 
@@ -201,6 +218,7 @@ def getattr_or_default(obj, k, default=None):
 
 class Schema:
     def _set_defaults(self, kwargs):
+
         for k, o in self.__options__.items():
             if kwargs.get(k) is None and o.default is not None:
                 if callable(o.default):
@@ -211,10 +229,10 @@ class Schema:
         return kwargs
 
     def _convert(self, kwargs):
-        for k, t in self.__annotations__.items():
-            if not _is_compatible(kwargs.get(k), t) and self.__options__[k].parser:
+        for k, o in self.__options__.items():
+            if not _is_compatible(kwargs.get(k), o.get_type()) and o.parser:
 
-                converted = self.__options__[k].parser(kwargs.get(k))
+                converted = o.parser(kwargs.get(k))
 
                 if converted is not None:
                     kwargs[k] = converted
@@ -222,9 +240,9 @@ class Schema:
         return kwargs
 
     def _check_types(self, kwargs):
-        for k, t in self.__annotations__.items():
-            if not _is_compatible(kwargs.get(k), t):
-                raise TypeError(f"Field `{k}`: {t} is not compatible with value `{kwargs.get(k)}`")
+        for k, o in self.__options__.items():
+            if not _is_compatible(kwargs.get(k), o.get_type()):
+                raise TypeError(f"Field `{k}`: {o.get_type()} is not compatible with value `{kwargs.get(k)}`")
 
         return kwargs
 
@@ -232,20 +250,35 @@ class Schema:
     def _get_options(cls):
         _options = {}
 
-        for k, t in cls.__annotations__.items():
-            value = getattr_or_default(cls, k)
+        _keys = set()
 
-            if isinstance(value, Options):
-                _options[k] = value
-            else:
-                _options[k] = Options(default=value)
+        attributes = getmembers(
+            cls, lambda _field: not isroutine(_field) and not isclass(_field)
+        )
 
-            if hasattr(t, '__origin__') and t.__origin__ == Union and None in t.__args__:
-                _options[k].required = False
+        for key, value in attributes:
+            if not key.startswith("__") and not key.endswith("__"):
+                if isinstance(value, Options):
+                    _options[key] = value
+                else:
+                    _options[key] = Options(default=value)
+
+        for key, _type in cls.__annotations__.items():
+            if key not in _options.keys():
+                _options[key] = Options()
+
+            _options[key].set_type(_type)
+
+            if hasattr(_type, '__origin__') and _type.__origin__ == Union and None in _type.__args__:
+                _options[key].required = False
 
         if hasattr(cls, '__cloned_options__'):
             for k, o in cls.__cloned_options__.items():
                 _options[k] = o
+
+        for key, options in _options.items():
+            if not options.get_type():
+                options.set_type(Any)
 
         return _options
 
@@ -253,21 +286,19 @@ class Schema:
         if not hasattr(self, '__options__'):
             self.__options__ = self.__class__._get_options()
 
-    def _clear_options(self):
-        for k, v in self.__annotations__.items():
-            value = getattr_or_default(self, k)
+    def _set_schema_vars(self):
+        for key, options in self.__options__.items():
+            if callable(options.default):
+                value = options.default()
+            else:
+                value = options.default
 
-            if isinstance(value, Options):
-                setattr(self, k, value.default)
+            sv = SchemaVar(value, options)
+            setattr(self, key, sv)
 
     def __init__(self, **kwargs) -> None:
         self._set_options()
-        self._clear_options()
-
-        try:
-            assert self.__annotations__.keys() == self.__options__.keys()
-        except AssertionError:
-            print(self.__annotations__, self.__options__)
+        self._set_schema_vars()
 
         # use options alias
         kwargs = self._map(kwargs)
@@ -289,10 +320,10 @@ class Schema:
         kwargs = self._validate_size(kwargs)
         kwargs = self._walk_validators(kwargs)
 
-        for k, v in kwargs.items():
-            if k in self.__annotations__.keys():
-                t = self.__annotations__[k]
-                setattr(self, k, _wrap(v, t))
+        for k, o in self.__options__.items():
+            v = kwargs.get(k)
+            t = self.__options__[k].get_type()
+            setattr(self, k, _wrap(v, t))
 
     @classmethod
     def representation(cls):
@@ -300,8 +331,8 @@ class Schema:
 
         return {
             'schema': {
-                k: _repr(t, _options[k])
-                for k, t in cls.__annotations__.items()
+                k: _repr(o.get_type(), o)
+                for k, o in _options.items()
             }
         }
 
@@ -351,12 +382,14 @@ class Schema:
     def to_dict(self) -> dict:
         _data = {}
 
-        for k in self.__annotations__.keys():
-            if self.__options__[k].required and hasattr(self, k):
-                t = self.__annotations__[k]
+        for k, o in self.__options__.items():
+            if o.required:
                 value = getattr(self, k)
 
-                _data[self._expected_name(k)] = _unwrap(value, t)
+                _unwrapped = _unwrap(value, o.get_type())
+
+                if _unwrapped is not None:
+                    _data[self._expected_name(k)] = _unwrapped
 
         return _data
 
@@ -372,28 +405,29 @@ class Schema:
 
         _drop = set()
 
+        _options = cls._get_options()
+
         for k, v in cls.__dict__.items():
-            if k not in ['__annotations__', '__options__']:
+            if k not in ['__annotations__', '__options__', '__cloned_options__'] + list(_options.keys()):
                 _dict[k] = v
 
         if include:
             include = set(include)
-            _all = set(cls.__annotations__.keys())
+            _all = set(_options.keys())
 
             _drop = _all - include
 
         if exclude:
             _drop = set(exclude)
 
-        for k in cls.__annotations__.keys():
+        for k, o in _options.items():
             if k not in _drop:
-                _dict['__annotations__'][k] = cls.__annotations__[k]
+                _dict['__cloned_options__'][k] = o
 
         if add:
             for k, t, o in add:
-                _dict['__annotations__'][k] = t
+                o.set_type(t)
                 _dict['__cloned_options__'][k] = o
-                _dict[k] = o.default
 
         new_cls = type(
             f"DynamicCloneOf{cls.__name__}{uuid.uuid4().hex}", cls.__bases__, _dict
@@ -402,11 +436,11 @@ class Schema:
         return new_cls
 
     def _validate_allowed(self, kwargs):
-        for k, v in self.__annotations__.items():
-            allowed = self.__options__[k].allowed
+        for k, o in self.__options__.items():
+            allowed = o.allowed
 
-            if callable(allowed):
-                allowed = allowed()
+            if callable(o.allowed):
+                allowed = o.allowed()
 
             if allowed and kwargs.get(k) not in allowed:
                 raise ValueError(f"Field `{k}`: value `{kwargs.get(k)}` is not allowed. Allowed values: `{allowed}`")
@@ -414,8 +448,8 @@ class Schema:
         return kwargs
 
     def _validate_min_length(self, kwargs):
-        for k, v in self.__annotations__.items():
-            min_length = self.__options__[k].min_length
+        for k, o in self.__options__.items():
+            min_length = o.min_length
 
             if callable(min_length):
                 min_length = min_length()
@@ -426,8 +460,8 @@ class Schema:
         return kwargs
 
     def _validate_max_length(self, kwargs):
-        for k, v in self.__annotations__.items():
-            max_length = self.__options__[k].max_length
+        for k, o in self.__options__.items():
+            max_length = o.max_length
 
             if callable(max_length):
                 max_length = max_length()
@@ -438,8 +472,8 @@ class Schema:
         return kwargs
 
     def _validate_min_value(self, kwargs):
-        for k, v in self.__annotations__.items():
-            min_value = self.__options__[k].min_value
+        for k, o in self.__options__.items():
+            min_value = o.min_value
 
             if callable(min_value):
                 min_value = min_value()
@@ -450,8 +484,8 @@ class Schema:
         return kwargs
 
     def _validate_max_value(self, kwargs):
-        for k, v in self.__annotations__.items():
-            max_value = self.__options__[k].max_value
+        for k, o in self.__options__.items():
+            max_value = o.max_value
 
             if callable(max_value):
                 max_value = max_value()
@@ -462,8 +496,8 @@ class Schema:
         return kwargs
 
     def _validate_size(self, kwargs):
-        for k, v in self.__annotations__.items():
-            size = self.__options__[k].size
+        for k, o in self.__options__.items():
+            size = o.size
 
             if callable(size):
                 size = size()
@@ -474,8 +508,8 @@ class Schema:
         return kwargs
 
     def _walk_validators(self, kwargs):
-        for k, v in self.__annotations__.items():
-            validators = self.__options__[k].validators
+        for k, o in self.__options__.items():
+            validators = o.validators
 
             if validators:
                 for validator in validators:
