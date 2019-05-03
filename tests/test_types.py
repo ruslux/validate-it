@@ -304,3 +304,18 @@ class TypesTestCase(TestCase):
         a = A(a="1.1", b="1.1")
         assert a.a == 1.1
         assert a.to_dict() == {'a': 1}
+
+        class A(Schema):
+            a: float = Options(parser=float, serializer=int)
+
+        with self.assertRaises(TypeError):
+            A(a="1.1", b="1.1")
+
+        class A(Schema):
+            a: float = Options(parser=float, serializer=int)
+
+            class Meta:
+                some_field = 3
+
+        with self.assertRaises(TypeError):
+            A(a="1.1", b="1.1")

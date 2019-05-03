@@ -45,10 +45,13 @@ class Schema:
         return _options
 
     @classmethod
-    def _set_options(cls):
+    def _init(cls):
         if not hasattr(cls, '__options__'):
             cls.__options__ = cls._get_options()
             cls._set_schema_vars()
+
+        if not hasattr(cls.Meta, 'strip_unknown'):
+            cls.Meta.strip_unknown = False
 
     @classmethod
     def _set_schema_vars(cls):
@@ -60,7 +63,7 @@ class Schema:
         self.__current_values__ = {}
         self.__confirmed_values__ = {}
 
-        self.__class__._set_options()
+        self.__class__._init()
 
         # use options alias
         kwargs = self._map(kwargs)
