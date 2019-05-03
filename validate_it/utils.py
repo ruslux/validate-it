@@ -154,7 +154,8 @@ def _wrap(value, t):
 
     try:
         if issubclass(t, Schema) and _is_compatible(value, dict):
-            return t.from_dict(value)
+            result = t.from_dict(value)
+            return result
     except TypeError:
         pass
 

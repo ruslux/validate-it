@@ -1,4 +1,4 @@
-from validate_it.utils import _is_compatible
+from validate_it.utils import _is_compatible, _wrap
 
 
 class SchemaVar:
@@ -8,9 +8,16 @@ class SchemaVar:
         self.options = options
 
     def __get__(self, instance, owner):
+        if not hasattr(instance, '__current_values__'):
+            return instance.__dict__[self._name]
+
         return instance.__current_values__.get(self._name)
 
     def __set__(self, instance, value):
+        if not hasattr(instance, '__current_values__'):
+            setattr(instance, '__current_values__', {})
+
+        value = _wrap(value, self.options.__type__)
         value = self._validate(value)
         instance.__current_values__[self._name] = value
 
@@ -131,3 +138,8 @@ class SchemaVar:
                 validator(value)
 
         return value
+
+
+__all__ = [
+    "SchemaVar"
+]

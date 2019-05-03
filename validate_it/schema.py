@@ -3,11 +3,39 @@ from inspect import getmembers, isroutine, isclass
 from typing import Union, List, Tuple, Type, Any
 
 from validate_it.options import Options
-from validate_it.utils import _wrap, _repr, _unwrap
+from validate_it.utils import _repr, _unwrap
 from validate_it.variable import SchemaVar
 
 
 class Schema:
+    class Meta:
+        strip_unknown = False
+
+    def __init__(self, **kwargs) -> None:
+        self.__init_kwargs__ = kwargs
+        self.__post_init__()
+
+    def __post_init__(self):
+        self.__class__._set_schema()
+
+        if hasattr(self, '__init_kwargs__'):
+            kwargs = self.__init_kwargs__
+
+            # use options alias
+            kwargs = self._map(kwargs)
+        else:
+            kwargs = {}
+
+            for k in self.__class__.__options__.keys():
+                kwargs[k] = getattr(self, k)
+
+            print(kwargs)
+
+        # other checks placed into descriptors
+        for k, o in self.__class__.__options__.items():
+            v = kwargs.get(k)
+            setattr(self, k, v)
+
     @classmethod
     def _get_options(cls):
         _options = {}
@@ -45,7 +73,7 @@ class Schema:
         return _options
 
     @classmethod
-    def _init(cls):
+    def _set_schema(cls):
         if not hasattr(cls, '__options__'):
             cls.__options__ = cls._get_options()
             cls._set_schema_vars()
@@ -59,21 +87,6 @@ class Schema:
             sv = SchemaVar(key, options)
             setattr(cls, key, sv)
 
-    def __init__(self, **kwargs) -> None:
-        self.__current_values__ = {}
-        self.__confirmed_values__ = {}
-
-        self.__class__._init()
-
-        # use options alias
-        kwargs = self._map(kwargs)
-
-        # other checks placed into descriptors
-        for k, o in self.__class__.__options__.items():
-            v = kwargs.get(k)
-            t = self.__class__.__options__[k].get_type()
-            setattr(self, k, _wrap(v, t))
-
     @classmethod
     def representation(cls):
         _options = cls._get_options()
@@ -84,9 +97,6 @@ class Schema:
                 for k, o in _options.items()
             }
         }
-
-    class Meta:
-        strip_unknown = False
 
     def _map(self, data):
         _new = {}
@@ -187,3 +197,7 @@ class Schema:
 
         return new_cls
 
+
+__all__ = [
+    "Schema"
+]
