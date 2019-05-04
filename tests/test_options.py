@@ -18,4 +18,4 @@ class TestAnnotations(TestCase):
         assert sorted(list(Example.__annotations__.keys())) == ["b", "c", "d", "e", "f"]
 
     def test_options(self):
-        assert sorted(list(Example._get_options().keys())) == ["a", "b", "c", "d", "e", "f"]
+        assert sorted(list(Example.__options__.keys())) == ["a", "b", "c", "d", "e", "f"]

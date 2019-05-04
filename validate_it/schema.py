@@ -8,35 +8,55 @@ from validate_it.variable import SchemaVar
 
 
 class Schema:
+    def __init_subclass__(cls) -> None:
+        super().__init_subclass__()
+
+        cls._init_schema()
+
+    def __getattribute__(self, name: str) -> Any:
+        if name == "__options__":
+            return self.__class__.__options__
+
+        return super().__getattribute__(name)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """ Dataclass support: prevent dataclass setattr to initialized SchemaVar"""
+        if isinstance(value, Options):
+            return
+
+        super().__setattr__(name, value)
+
     class Meta:
         strip_unknown = False
 
+    def __new__(cls, **kwargs) -> Any:
+        """ Create container for validated values """
+        instance = super().__new__(cls)
+        instance.__current_values__ = {}
+        return instance
+
     def __init__(self, **kwargs) -> None:
-        self.__init_kwargs__ = kwargs
-        self.__post_init__()
+        """ Regular way to initialize Schema instance """
+        kwargs = self._map(kwargs)
+
+        for k, o in self.__options__.items():
+            v = kwargs.get(k)
+            setattr(self, k, v)
 
     def __post_init__(self):
-        self.__class__._set_schema()
+        """ Dataclass way to initialize Schema instance """
+        kwargs = {}
 
-        if hasattr(self, "__init_kwargs__"):
-            kwargs = self.__init_kwargs__
+        for k in self.__options__.keys():
+            kwargs[k] = getattr(self, k)
 
-            # use options alias
-            kwargs = self._map(kwargs)
-        else:
-            kwargs = {}
-
-            for k in self.__class__.__options__.keys():
-                kwargs[k] = getattr(self, k)
-
-        # other checks placed into descriptors
-        for k, o in self.__class__.__options__.items():
+        for k, o in self.__options__.items():
             v = kwargs.get(k)
             setattr(self, k, v)
 
     @classmethod
-    def _get_options(cls):
-        _options = {}
+    def _set_options(cls):
+        cls.__options__ = {}
 
         _keys = set()
 
@@ -47,33 +67,46 @@ class Schema:
         for key, value in attributes:
             if not key.startswith("__") and not key.endswith("__"):
                 if isinstance(value, Options):
-                    _options[key] = value
+                    cls.__options__[key] = value
                 else:
-                    _options[key] = Options(default=value)
+                    cls.__options__[key] = Options(default=value)
 
         for key, _type in cls.__annotations__.items():
-            if key not in _options.keys():
-                _options[key] = Options()
+            if key not in cls.__options__.keys():
+                cls.__options__[key] = Options()
 
-            _options[key].set_type(_type)
+    @classmethod
+    def _set_options_type(cls):
+        for key, _type in cls.__annotations__.items():
+            cls.__options__[key].set_type(_type)
+
+    @classmethod
+    def _set_options_required(cls):
+        for key, _type in cls.__annotations__.items():
 
             if hasattr(_type, "__origin__") and _type.__origin__ == Union and None in _type.__args__:
-                _options[key].required = False
+                cls.__options__[key].required = False
 
+    @classmethod
+    def _add_cloned_options(cls):
         if hasattr(cls, "__cloned_options__"):
             for k, o in cls.__cloned_options__.items():
-                _options[k] = o
+                cls.__options__[k] = o
 
-        for key, options in _options.items():
+    @classmethod
+    def _set_options_type_any(cls):
+        for key, options in cls.__options__.items():
             if not options.get_type():
                 options.set_type(Any)
 
-        return _options
-
     @classmethod
-    def _set_schema(cls):
+    def _init_schema(cls):
         if not hasattr(cls, "__options__"):
-            cls.__options__ = cls._get_options()
+            cls._set_options()
+            cls._set_options_type()
+            cls._set_options_required()
+            cls._add_cloned_options()
+            cls._set_options_type_any()
             cls._set_schema_vars()
 
         if not hasattr(cls.Meta, "strip_unknown"):
@@ -87,12 +120,10 @@ class Schema:
 
     @classmethod
     def representation(cls):
-        _options = cls._get_options()
-
         return {
             "schema": {
                 k: _repr(o.get_type(), o)
-                for k, o in _options.items()
+                for k, o in cls.__options__.items()
             }
         }
 
@@ -100,7 +131,7 @@ class Schema:
         _new = {}
         _expected = []
 
-        for key, value in self.__class__.__options__.items():
+        for key, value in self.__options__.items():
             try:
                 _new[key] = data[key]
                 _expected.append(key)
@@ -128,8 +159,8 @@ class Schema:
         return cls(**data)
 
     def _expected_name(self, name):
-        if name in self.__class__.__options__.keys():
-            rename = self.__class__.__options__[name].rename
+        if name in self.__options__.keys():
+            rename = self.__options__[name].rename
 
             if rename:
                 return rename
@@ -139,7 +170,7 @@ class Schema:
     def to_dict(self) -> dict:
         _data = {}
 
-        for k, o in self.__class__.__options__.items():
+        for k, o in self.__options__.items():
             if o.required:
                 value = getattr(self, k)
 
@@ -155,6 +186,9 @@ class Schema:
 
     @classmethod
     def clone(cls, exclude=None, include=None, add: List[Tuple[str, Type, Options]] = None):
+        if "__options__" not in cls.__dict__.keys():
+            cls._init_schema()
+
         if exclude and include:
             raise ValueError("cannot specify both exclude and include")
 
@@ -165,22 +199,20 @@ class Schema:
 
         _drop = set()
 
-        _options = cls._get_options()
-
         for k, v in cls.__dict__.items():
-            if k not in ["__annotations__", "__options__", "__cloned_options__"] + list(_options.keys()):
+            if k not in ["__annotations__", "__options__", "__cloned_options__"] + list(cls.__options__.keys()):
                 _dict[k] = v
 
         if include:
             include = set(include)
-            _all = set(_options.keys())
+            _all = set(cls.__options__.keys())
 
             _drop = _all - include
 
         if exclude:
             _drop = set(exclude)
 
-        for k, o in _options.items():
+        for k, o in cls.__options__.items():
             if k not in _drop:
                 _dict["__cloned_options__"][k] = o
 

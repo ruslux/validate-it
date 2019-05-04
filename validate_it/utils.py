@@ -104,6 +104,7 @@ def _repr(t, o):
 
 
 def _unwrap(value, t):
+    """ Cast nested values types: List[NestedClass] -> List[Dict]"""
     from validate_it import Schema
 
     if _is_generic_alias(t, Union):
@@ -133,7 +134,11 @@ def _unwrap(value, t):
 
 
 def _wrap(value, t):
+    """ Cast nested values types: List[Dict] -> List[NestedClass]"""
     from validate_it import Schema
+
+    if value is None:
+        return None
 
     if _is_generic_alias(t, Union):
         for arg in t.__args__:
