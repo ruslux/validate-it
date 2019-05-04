@@ -10,12 +10,12 @@ class Example(Schema):
     c: int
     d: Optional[List]
     e: Optional[int] = 1
-    f: int = Options(rename='g')
+    f: int = Options(rename="g")
 
 
 class TestAnnotations(TestCase):
     def test_annotations(self):
-        assert sorted(list(Example.__annotations__.keys())) == ['b', 'c', 'd', 'e', 'f']
+        assert sorted(list(Example.__annotations__.keys())) == ["b", "c", "d", "e", "f"]
 
     def test_options(self):
-        assert sorted(list(Example._get_options().keys())) == ['a', 'b', 'c', 'd', 'e', 'f']
+        assert sorted(list(Example._get_options().keys())) == ["a", "b", "c", "d", "e", "f"]

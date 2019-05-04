@@ -18,7 +18,7 @@ class Schema:
     def __post_init__(self):
         self.__class__._set_schema()
 
-        if hasattr(self, '__init_kwargs__'):
+        if hasattr(self, "__init_kwargs__"):
             kwargs = self.__init_kwargs__
 
             # use options alias
@@ -28,8 +28,6 @@ class Schema:
 
             for k in self.__class__.__options__.keys():
                 kwargs[k] = getattr(self, k)
-
-            print(kwargs)
 
         # other checks placed into descriptors
         for k, o in self.__class__.__options__.items():
@@ -59,10 +57,10 @@ class Schema:
 
             _options[key].set_type(_type)
 
-            if hasattr(_type, '__origin__') and _type.__origin__ == Union and None in _type.__args__:
+            if hasattr(_type, "__origin__") and _type.__origin__ == Union and None in _type.__args__:
                 _options[key].required = False
 
-        if hasattr(cls, '__cloned_options__'):
+        if hasattr(cls, "__cloned_options__"):
             for k, o in cls.__cloned_options__.items():
                 _options[k] = o
 
@@ -74,11 +72,11 @@ class Schema:
 
     @classmethod
     def _set_schema(cls):
-        if not hasattr(cls, '__options__'):
+        if not hasattr(cls, "__options__"):
             cls.__options__ = cls._get_options()
             cls._set_schema_vars()
 
-        if not hasattr(cls.Meta, 'strip_unknown'):
+        if not hasattr(cls.Meta, "strip_unknown"):
             cls.Meta.strip_unknown = False
 
     @classmethod
@@ -92,7 +90,7 @@ class Schema:
         _options = cls._get_options()
 
         return {
-            'schema': {
+            "schema": {
                 k: _repr(o.get_type(), o)
                 for k, o in _options.items()
             }
@@ -161,8 +159,8 @@ class Schema:
             raise ValueError("cannot specify both exclude and include")
 
         _dict = {
-            '__cloned_options__': {},
-            '__annotations__': {}
+            "__cloned_options__": {},
+            "__annotations__": {}
         }
 
         _drop = set()
@@ -170,7 +168,7 @@ class Schema:
         _options = cls._get_options()
 
         for k, v in cls.__dict__.items():
-            if k not in ['__annotations__', '__options__', '__cloned_options__'] + list(_options.keys()):
+            if k not in ["__annotations__", "__options__", "__cloned_options__"] + list(_options.keys()):
                 _dict[k] = v
 
         if include:
@@ -184,12 +182,12 @@ class Schema:
 
         for k, o in _options.items():
             if k not in _drop:
-                _dict['__cloned_options__'][k] = o
+                _dict["__cloned_options__"][k] = o
 
         if add:
             for k, t, o in add:
                 o.set_type(t)
-                _dict['__cloned_options__'][k] = o
+                _dict["__cloned_options__"][k] = o
 
         new_cls = type(
             f"DynamicCloneOf{cls.__name__}{uuid.uuid4().hex}", cls.__bases__, _dict

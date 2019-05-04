@@ -5,48 +5,48 @@ from typing import Dict, List, Union, TypeVar, Any
 def _is_generic_alias(t, classes):
     if not isinstance(classes, (list, tuple)):
         classes = (classes,)
-    return hasattr(t, '__origin__') and t.__origin__ in classes
+    return hasattr(t, "__origin__") and t.__origin__ in classes
 
 
 def _repr(t, o):
     from validate_it import Schema, Options
 
     _d = {
-        'required': o.required,
+        "required": o.required,
     }
 
     if o.default is not None:
-        _d['default'] = o.default if not callable(o.default) else 'dynamic'
+        _d["default"] = o.default if not callable(o.default) else "dynamic"
 
     if o.min_length is not None:
-        _d['min length'] = o.min_length if not callable(o.min_length) else 'dynamic'
+        _d["min length"] = o.min_length if not callable(o.min_length) else "dynamic"
 
     if o.max_length is not None:
-        _d['max length'] = o.max_length if not callable(o.max_length) else 'dynamic'
+        _d["max length"] = o.max_length if not callable(o.max_length) else "dynamic"
 
     if o.min_value is not None:
-        _d['min value'] = o.min_value if not callable(o.min_value) else 'dynamic'
+        _d["min value"] = o.min_value if not callable(o.min_value) else "dynamic"
 
     if o.max_value is not None:
-        _d['max value'] = o.max_value if not callable(o.max_value) else 'dynamic'
+        _d["max value"] = o.max_value if not callable(o.max_value) else "dynamic"
 
     if o.size is not None:
-        _d['size'] = o.size if not callable(o.size) else 'dynamic'
+        _d["size"] = o.size if not callable(o.size) else "dynamic"
 
     if o.allowed is not None:
-        _d['allowed values'] = o.allowed if not callable(o.allowed) else 'dynamic'
+        _d["allowed values"] = o.allowed if not callable(o.allowed) else "dynamic"
 
     if o.alias is not None:
-        _d['search alias'] = o.alias if not callable(o.alias) else 'dynamic'
+        _d["search alias"] = o.alias if not callable(o.alias) else "dynamic"
 
     if o.rename is not None:
-        _d['rename to'] = o.rename if not callable(o.rename) else 'dynamic'
+        _d["rename to"] = o.rename if not callable(o.rename) else "dynamic"
 
     if _is_generic_alias(t, Union):
         _d.update(
             {
-                'type': 'union',
-                'nested_types': [
+                "type": "union",
+                "nested_types": [
                     _repr(arg, Options())
                     for arg in t.__args__
                 ]
@@ -56,8 +56,8 @@ def _repr(t, o):
     elif _is_generic_alias(t, (list, List)):
         _d.update(
             {
-                'type': 'list',
-                'nested_type': [
+                "type": "list",
+                "nested_type": [
                     _repr(t.__args__[0], Options())
                 ]
             }
@@ -66,39 +66,39 @@ def _repr(t, o):
     elif _is_generic_alias(t, (dict, Dict)):
         _d.update(
             {
-                'type': 'dict',
-                'key_type': _repr(t.__args__[0], Options()),
-                'value_type': _repr(t.__args__[1], Options())
+                "type": "dict",
+                "key_type": _repr(t.__args__[0], Options()),
+                "value_type": _repr(t.__args__[1], Options())
             }
         )
 
     elif issubclass(t, Schema):
         _d.update(
             {
-                'type': 'validate_it.Schema',
-                'schema': t.representation()
+                "type": "validate_it.Schema",
+                "schema": t.representation()
             }
         )
 
     elif isinstance(t, list):
         _d.update(
             {
-                'type': 'dict',
-                'nested_type': 'any'
+                "type": "dict",
+                "nested_type": "any"
             }
         )
 
     elif isinstance(t, dict):
         _d.update(
             {
-                'type': 'dict',
-                'key_type': 'any',
-                'value_type': 'any'
+                "type": "dict",
+                "key_type": "any",
+                "value_type": "any"
             }
         )
 
     else:
-        _d['type'] = t.__name__
+        _d["type"] = t.__name__
 
     return _d
 

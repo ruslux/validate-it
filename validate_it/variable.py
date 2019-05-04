@@ -8,14 +8,14 @@ class SchemaVar:
         self.options = options
 
     def __get__(self, instance, owner):
-        if not hasattr(instance, '__current_values__'):
+        if not hasattr(instance, "__current_values__"):
             return instance.__dict__[self._name]
 
         return instance.__current_values__.get(self._name)
 
     def __set__(self, instance, value):
-        if not hasattr(instance, '__current_values__'):
-            setattr(instance, '__current_values__', {})
+        if not hasattr(instance, "__current_values__"):
+            setattr(instance, "__current_values__", {})
 
         value = _wrap(value, self.options.__type__)
         value = self._validate(value)

@@ -30,18 +30,18 @@ class DataclassTestCase(TestCase):
             skills: Dict[str, Skill]
 
         _data = {
-            'name': 'John',
-            'items': [
-                {'title': 'Rose'}
+            "name": "John",
+            "items": [
+                {"title": "Rose"}
             ],
-            'skills': {
-                'fire': {
-                    'level': 1,
-                    'multiplier': 2.0,
+            "skills": {
+                "fire": {
+                    "level": 1,
+                    "multiplier": 2.0,
                 },
-                'ice': {
-                    'level': 2,
-                    'multiplier': 3.0,
+                "ice": {
+                    "level": 2,
+                    "multiplier": 3.0,
                 }
             }
         }
@@ -51,7 +51,7 @@ class DataclassTestCase(TestCase):
         self.assertEqual(p.to_dict(), _data)
         self.assertEqual(p.name, "John")
         self.assertEqual(p.items[0].title, "Rose")
-        self.assertEqual(p.skills['ice'].level, 2)
+        self.assertEqual(p.skills["ice"].level, 2)
 
         p = Player(**_data)
         self.assertEqual(p.to_dict(), _data)

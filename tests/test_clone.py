@@ -14,9 +14,9 @@ class First(Schema):
 Second = First.clone(include=["a"])
 Third = First.clone(exclude=["a"])
 # try replace
-Fourth = First.clone(add=[('a', str, Options(parser=str))])
+Fourth = First.clone(add=[("a", str, Options(parser=str))])
 # add
-Fifth = First.clone(add=[('_id', int, Options(default=1))])
+Fifth = First.clone(add=[("_id", int, Options(default=1))])
 
 
 class TestClone(TestCase):
