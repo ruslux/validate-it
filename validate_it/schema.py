@@ -1,6 +1,7 @@
 import uuid
 from inspect import getmembers, isroutine, isclass
 from typing import Union, List, Tuple, Type, Any
+from warnings import warn
 
 from validate_it.options import Options
 from validate_it.utils import _repr, _unwrap
@@ -11,7 +12,10 @@ class Schema:
     def __init_subclass__(cls) -> None:
         super().__init_subclass__()
 
-        cls._init_schema()
+        if not hasattr(cls, '__annotations__'):
+            warn("Schema without __annotations__ must be abstract. Do not instantiate it", RuntimeWarning)
+        else:
+            cls._init_schema()
 
     def __getattribute__(self, name: str) -> Any:
         if name == "__options__":
@@ -31,9 +35,13 @@ class Schema:
 
     def __new__(cls, **kwargs) -> Any:
         """ Create container for validated values """
-        instance = super().__new__(cls)
-        instance.__current_values__ = {}
-        return instance
+
+        if not hasattr(cls, '__annotations__'):
+            raise RuntimeWarning("Schema without __annotations__ must be abstract. Do not instantiate it")
+        else:
+            instance = super().__new__(cls)
+            instance.__current_values__ = {}
+            return instance
 
     def __init__(self, **kwargs) -> None:
         """ Regular way to initialize Schema instance """
@@ -68,6 +76,8 @@ class Schema:
             if not key.startswith("__") and not key.endswith("__"):
                 if isinstance(value, Options):
                     cls.__options__[key] = value
+                elif isinstance(value, SchemaVar):
+                    cls.__options__[key] = value.options
                 else:
                     cls.__options__[key] = Options(default=value)
 
@@ -101,13 +111,13 @@ class Schema:
 
     @classmethod
     def _init_schema(cls):
-        if not hasattr(cls, "__options__"):
-            cls._set_options()
-            cls._set_options_type()
-            cls._set_options_required()
-            cls._add_cloned_options()
-            cls._set_options_type_any()
-            cls._set_schema_vars()
+        # if not hasattr(cls, "__options__"):
+        cls._set_options()
+        cls._set_options_type()
+        cls._set_options_required()
+        cls._add_cloned_options()
+        cls._set_options_type_any()
+        cls._set_schema_vars()
 
         if not hasattr(cls.Meta, "strip_unknown"):
             cls.Meta.strip_unknown = False
