@@ -1,5 +1,5 @@
 
-from typing import Optional, List, Dict, Tuple
+from typing import List, Dict
 from unittest import TestCase
 
 from validate_it import Schema, Options
@@ -115,3 +115,22 @@ class DataclassTestCase(TestCase):
 
         p = Player(**_data)
         self.assertEqual(p.to_dict(), _data)
+
+    def test_missing_arguments(self):
+        try:
+            from dataclasses import dataclass
+        except ImportError:
+            return
+
+        class A(Schema):
+            a: str = Options(default="a")
+            b: str = Options(default="b")
+
+        A.from_dict({"a": "c"})
+
+        @dataclass
+        class A(Schema):
+            a: str = Options(default="a")
+            b: str = Options(default="b")
+
+        A.from_dict({"a": "c"})

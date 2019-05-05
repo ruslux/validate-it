@@ -165,7 +165,25 @@ class Schema:
         return _new
 
     @classmethod
+    def _set_defaults(cls, data):
+        """ Set defaults for silence @dataclass __init__()  missing required positional arguments TypeError"""
+        for key, options in cls.__options__.items():
+            value = data.get(key)
+
+            if value is None and options.default is not None:
+                if callable(options.default):
+                    value = options.default()
+                else:
+                    value = options.default
+
+                data[key] = value
+
+        return data
+
+    @classmethod
     def from_dict(cls, data: dict):
+        data = cls._set_defaults(data)
+
         return cls(**data)
 
     def _expected_name(self, name):
