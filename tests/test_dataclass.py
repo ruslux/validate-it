@@ -134,3 +134,16 @@ class DataclassTestCase(TestCase):
             b: str = Options(default="b")
 
         A.from_dict({"a": "c"})
+
+    def test_map(self):
+        try:
+            from dataclasses import dataclass
+        except ImportError:
+            return
+
+        @dataclass
+        class A(Schema):
+            a: int = Options(alias="_a")
+            b: int = Options(alias="_b")
+
+        A.from_dict({"_a": 1, "_b": 2})

@@ -137,11 +137,12 @@ class Schema:
             }
         }
 
-    def _map(self, data):
+    @classmethod
+    def _map(cls, data):
         _new = {}
         _expected = []
 
-        for key, value in self.__options__.items():
+        for key, value in cls.__options__.items():
             try:
                 _new[key] = data[key]
                 _expected.append(key)
@@ -153,7 +154,7 @@ class Schema:
                     except KeyError:
                         pass
 
-        if not self.Meta.strip_unknown:
+        if not cls.Meta.strip_unknown:
             _schema_keys = set(_expected)
             _kwargs_keys = set(data.keys())
 
@@ -183,6 +184,7 @@ class Schema:
     @classmethod
     def from_dict(cls, data: dict):
         data = cls._set_defaults(data)
+        data = cls._map(data)
 
         return cls(**data)
 
