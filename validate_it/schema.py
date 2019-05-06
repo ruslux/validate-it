@@ -353,8 +353,6 @@ def clone(cls, strip_unknown=False, exclude=None, include=None, add: List[Tuple[
             o.set_type(t)
             _dict["__options__"][k] = o
 
-    print(_dict["__options__"])
-
     new_cls = type(
         f"DynamicCloneOf{cls.__name__}_{uuid.uuid4().hex}", cls.__bases__, _dict
     )

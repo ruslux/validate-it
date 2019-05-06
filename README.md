@@ -8,6 +8,7 @@
 - [Installation](#installation)
 - [Supported fields](#fields)
 - [Validation example](#validation-example)
+- [Dataclass example](#dataclass-example)
 - [Simple mapping example](#simple-mapping-example)
 - [Nested mapping example](#nested-mapping-example)
 - [Requirements](#requirements)
@@ -27,19 +28,21 @@ pip install validate-it
 import re
 from datetime import datetime
 from typing import Dict, List, Union, Optional
-from validate_it import Schema, Options
+from validate_it import schema, Options
 
 
 class IsNotEmailError(Exception):
     pass
 
 
-def is_email(value):
+def is_email(key, value):
     if not re.match(r"[^@]+@[^@]+\.[^@]+", value):
-        raise IsNotEmailError()
+        raise IsNotEmailError(f"{key}: is not email")
 
+    return value
 
-class Example(Schema):
+@schema
+class Example:
     # required fields
     field_a: datetime
     field_b: float
@@ -83,10 +86,12 @@ from typing import List
 from validate_it import *
 
 
-class Simple(Schema):
+@schema
+class Simple:
     a: int
     b: int
-    
+
+
 simple = Simple(a=1, b=2)
 simple.a = 2
 simple.b = 3
@@ -96,17 +101,20 @@ try:
 except TypeError:
     print("Wrong type")
 
-class Owner(Schema):
+@schema
+class Owner:
     first_name: str
     last_name: str
 
 
-class Characteristics(Schema):
+@schema
+class Characteristics:
     cc: float = Options(min_value=0.0)
     hp: int = Options(min_value=0)
 
 
-class Car(Schema):
+@schema
+class Car:
     name: str = Options(min_length=2, max_length=20)
     owners: List[Owner]
     characteristics: Characteristics = Options(default={"cc": 0.0, "hp": 0})
@@ -144,8 +152,30 @@ _expected = {
     "convert": "1"
 }
 
-car = Car.from_dict(_data)
-assert car.to_dict() == _expected
+car = Car(**_data)
+assert to_dict(car) == _expected
+```
+### <a name="dataclass-example"/>Dataclass example</a>
+```python
+from validate_it import *
+from dataclasses import dataclass
+
+
+@schema
+@dataclass
+class Simple:
+    a: int
+    b: int
+
+
+simple = Simple(a=1, b=2)
+simple.a = 2
+simple.b = 3
+
+try:
+    simple.a = 'not int'
+except TypeError:
+    print("Wrong type")
 ```
 
 ### <a name="simple-mapping-example"/>Simple mapping example</a>
@@ -153,7 +183,8 @@ assert car.to_dict() == _expected
 from validate_it import *
 
 
-class CustomMapper(Schema):
+@schema
+class User:
     first_name: str = Options(alias="f")
     last_name: str = Options(alias="l")
 
@@ -162,9 +193,9 @@ _in_data = {
     "l": "Connor"
 }
 
-mapper = CustomMapper.from_dict(_in_data)
+user = User(**_in_data)
 
-assert mapper.to_dict() == {"first_name": "John", "last_name": "Connor"}
+assert to_dict(user) == {"first_name": "John", "last_name": "Connor"}
 ```
 
 ### <a name="nested-mapping-example"/>Nested mapping example</a>
@@ -173,7 +204,8 @@ from validate_it import *
 from accordion import compress
 
 
-class Player(Schema):
+@schema
+class Player:
     nickname: str = Options(alias="info.nickname")
     intelligence: int = Options(alias="characteristics/0")
     dexterity: int = Options(alias="characteristics/1")
@@ -192,9 +224,9 @@ _in_data = {
     ]
 }
 
-mapper = Player.from_dict(compress(_in_data))
+player = Player(**compress(_in_data))
 
-assert mapper.to_dict() == {
+assert to_dict(player) == {
     "nickname": "Killer777", 
     "intelligence": 7, 
     "dexterity": 55, 
@@ -209,7 +241,8 @@ from validate_it import *
 from accordion import expand
 
 
-class CustomMapper(Schema):
+@schema
+class Player:
     nickname: str = Options(rename="info.nickname")
     intelligence: int = Options(rename="characteristics/0")
     dexterity: int = Options(rename="characteristics/1")
@@ -224,9 +257,9 @@ _in_data = {
     "vitality": 44
 }
 
-mapper = CustomMapper.from_dict(_in_data)
+player = Player(**_in_data)
 
-assert expand(mapper.to_dict()) == {
+assert expand(to_dict(player)) == {
     "info": {
         "nickname": "Killer777",
     },
