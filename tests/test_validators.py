@@ -1,19 +1,22 @@
 import re
 from unittest import TestCase
 
-from validate_it import Schema, Options
+from validate_it import Options, schema
 
 
 class IsNotEmailError(Exception):
     pass
 
 
-def is_email(value):
+def is_email(key, value):
     if not re.match(r"[^@]+@[^@]+\.[^@]+", value):
         raise IsNotEmailError()
 
+    return value
 
-class TypeWithValidator(Schema):
+
+@schema
+class TypeWithValidator:
     email: str = Options(validators=[is_email])
 
 

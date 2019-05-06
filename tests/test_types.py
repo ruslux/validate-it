@@ -1,19 +1,22 @@
 from typing import Optional, List, Dict, Tuple
 from unittest import TestCase
 
-from validate_it import Schema, Options
+from validate_it import Options, schema, to_dict
 
 
-class Skill(Schema):
+@schema
+class Skill:
     level: int
     multiplier: float
 
 
-class Item(Schema):
+@schema
+class Item:
     title: str
 
 
-class Player(Schema):
+@schema
+class Player:
     name: str
 
     items: List[Item]
@@ -23,7 +26,8 @@ class Player(Schema):
 
 class TypesTestCase(TestCase):
     def test_required(self):
-        class A(Schema):
+        @schema
+        class A:
             _int: int
             _float: float
             _bool: bool
@@ -32,7 +36,7 @@ class TypesTestCase(TestCase):
             _list: list
 
         with self.assertRaises(TypeError):
-            A.from_dict({})
+            A()
 
         _data = {
             "_int": 1,
@@ -43,10 +47,11 @@ class TypesTestCase(TestCase):
             "_list": list()
         }
 
-        assert A.from_dict(_data).to_dict() == _data
+        assert to_dict(A(**_data)) == _data
 
     def test_required_default(self):
-        class A(Schema):
+        @schema
+        class A:
             _int: int = Options(default=1)
             _float: float = Options(default=1.0)
             _bool: bool = Options(default=True)
@@ -63,10 +68,11 @@ class TypesTestCase(TestCase):
             "_list": [1, 2]
         }
 
-        self.assertEqual(A.from_dict({}).to_dict(), _data)
+        self.assertEqual(to_dict(A()), _data)
 
     def test_required_default_callable(self):
-        class A(Schema):
+        @schema
+        class A:
             _int: int = Options(default=lambda: 1)
             _float: float = Options(default=lambda: 1.0)
             _bool: bool = Options(default=lambda: True)
@@ -83,10 +89,11 @@ class TypesTestCase(TestCase):
             "_list": [1, 2]
         }
 
-        self.assertEqual(A.from_dict({}).to_dict(), _data)
+        self.assertEqual(to_dict(A()), _data)
 
     def test_not_required(self):
-        class A(Schema):
+        @schema
+        class A:
             _optional: Optional[int]
             _required: int
 
@@ -94,22 +101,23 @@ class TypesTestCase(TestCase):
             "_required": 1
         }
 
-        self.assertEqual(A.from_dict(_data).to_dict(), _data)
+        self.assertEqual(to_dict(A(**_data)), _data)
 
         _data = {
             "_required": 1,
             "_optional": 1
         }
 
-        self.assertEqual(A.from_dict(_data).to_dict(), _data)
+        self.assertEqual(to_dict(A(**_data)), _data)
 
         _data = {}
 
         with self.assertRaises(TypeError):
-            A.from_dict(_data).to_dict()
+            to_dict(A(**_data))
 
     def test_not_required_default(self):
-        class A(Schema):
+        @schema
+        class A:
             _optional: Optional[int] = 0
             _optional_with_options: Optional[int] = Options(default=1)
             _required: int = 0
@@ -120,10 +128,11 @@ class TypesTestCase(TestCase):
             "_optional_with_options": 1
         }
 
-        self.assertEqual(A.from_dict(_data).to_dict(), _data)
+        self.assertEqual(to_dict(A(**_data)), _data)
 
     def test_not_required_default_callable(self):
-        class A(Schema):
+        @schema
+        class A:
             _optional: Optional[int] = lambda: 0
             _optional_with_options: Optional[int] = Options(default=lambda: 0)
             _required: int = lambda: 0
@@ -134,10 +143,11 @@ class TypesTestCase(TestCase):
             "_optional_with_options": 1
         }
 
-        self.assertEqual(A.from_dict(_data).to_dict(), _data)
+        self.assertEqual(to_dict(A(**_data)), _data)
 
     def empty(self):
-        class A(Schema):
+        @schema
+        class A:
             _optional: Optional[int]
             _required: int
 
@@ -150,10 +160,11 @@ class TypesTestCase(TestCase):
             "_required": 0
         }
 
-        self.assertEqual(A.from_dict(_data).to_dict(), _expected)
+        self.assertEqual(to_dict(A(**_data)), _expected)
 
     def test_allowed(self):
-        class A(Schema):
+        @schema
+        class A:
             a: int = Options(allowed=[1, 2])
 
         with self.assertRaises(ValueError):
@@ -162,7 +173,8 @@ class TypesTestCase(TestCase):
         A(a=1)
 
     def test_allowed_callable(self):
-        class A(Schema):
+        @schema
+        class A:
             a: int = Options(allowed=lambda: [1, 2])
 
         with self.assertRaises(ValueError):
@@ -171,36 +183,39 @@ class TypesTestCase(TestCase):
         A(a=1)
 
     def test_amount(self):
-        class A(Schema):
+        @schema
+        class A:
             a: int = Options(min_value=10)
             b: int = Options(max_value=20)
 
-        A.from_dict({"a": 10, "b": 20})
+        A(a=10, b=20)
 
         with self.assertRaises(ValueError):
-            A.from_dict({"a": 9, "b": 20}).to_dict()
+            to_dict(A(a=9, b=20))
 
         with self.assertRaises(ValueError):
-            A.from_dict({"a": 10, "b": 21})
+            to_dict(A(a=10, b=21))
 
     def test_length(self):
-        class A(Schema):
+        @schema
+        class A:
             a: str = Options(min_length=2)
             b: str = Options(max_length=5)
 
-        A.from_dict({"a": "12", "b": "12345"})
+        A(a="12", b="12345")
 
         with self.assertRaises(ValueError):
-            A.from_dict({"a": "1", "b": "12345"})
+            A(a="1", b="12345")
 
         with self.assertRaises(ValueError):
-            A.from_dict({"a": "12", "b": "123456"})
+            A(a="12", b="123456")
 
     def test_convert(self):
-        class A(Schema):
+        @schema
+        class A:
             a: str = Options(parser=str)
 
-        self.assertEqual(A.from_dict({"a": 1}).to_dict(), {"a": "1"})
+        self.assertEqual(to_dict(A(a=1)), {"a": "1"})
 
     def test_nested_validation_and_members_access(self):
         _data = {
@@ -220,26 +235,27 @@ class TypesTestCase(TestCase):
             }
         }
 
-        p = Player.from_dict(_data)
+        p = Player(**_data)
 
-        self.assertEqual(p.to_dict(), _data)
+        self.assertEqual(to_dict(p), _data)
         self.assertEqual(p.name, "John")
         self.assertEqual(p.items[0].title, "Rose")
         self.assertEqual(p.skills["ice"].level, 2)
 
     def test_not_specified(self):
-        class A(Schema):
+        @schema
+        class A:
             a: list
             b: dict
 
         with self.assertRaises(TypeError):
-            A.from_dict({"a": {1: 1}, "b": {1: 1}})
+            A(a={1: 1}, b={1: 1})
 
         with self.assertRaises(TypeError):
-            A.from_dict({"a": [1, 1], "b": [1, 1]})
+            A(a=[1, 1], b=[1, 1])
 
         self.assertEqual(
-            A.from_dict({"a": [1, 1], "b": {1: 1}}).to_dict(),
+            to_dict(A(a=[1, 1], b={1: 1})),
             {
                 "a": [1, 1],
                 "b": {1: 1}
@@ -247,18 +263,20 @@ class TypesTestCase(TestCase):
         )
 
     def test_tuple(self):
-        class A(Schema):
+        @schema
+        class A:
             a: tuple
             b: Tuple[int, int, float]
 
         with self.assertRaises(TypeError):
-            A.from_dict({"a": [1, 2, 3], "b": {1, 2, 3.0}})
+            A(a=[1, 2, 3], b={1, 2, 3.0})
 
         with self.assertRaises(TypeError):
-            A.from_dict({"a": {1, 2, 3}, "b": {1, 2, 3}})
+            A(a={1, 2, 3}, b={1, 2, 3})
 
     def test_typevar(self):
-        class A(Schema):
+        @schema
+        class A:
             a: Optional[List]
             b: Optional[List[int]]
             c: Optional[Dict]
@@ -266,10 +284,11 @@ class TypesTestCase(TestCase):
 
         data = {"a": [], "b": [1], "c": {"a": "b"}, "d": {1: 2}}
 
-        assert A.from_dict(data).to_dict() == data
+        assert to_dict(A(**data)) == data
 
     def test_descriptor(self):
-        class A(Schema):
+        @schema
+        class A:
             a: Optional[List]
             b: Optional[List[int]]
             c: Optional[Dict]
@@ -277,7 +296,7 @@ class TypesTestCase(TestCase):
 
         a = A(a=[], b=[1], c={"a": "b"}, d={1: 2})
 
-        assert a.to_dict() == {"a": [], "b": [1], "c": {"a": "b"}, "d": {1: 2}}
+        assert to_dict(a) == {"a": [], "b": [1], "c": {"a": "b"}, "d": {1: 2}}
 
         with self.assertRaises(TypeError):
             a.a = {}
@@ -287,31 +306,32 @@ class TypesTestCase(TestCase):
         assert a.a == [100]
 
     def test_serializer(self):
-        class A(Schema):
+        @schema
+        class A:
             a: float = Options(parser=float, serializer=int)
 
         a = A(a="1.1")
         assert a.a == 1.1
-        assert a.to_dict() == {"a": 1}
+        assert to_dict(a) == {"a": 1}
 
     def test_unexpected(self):
-        class A(Schema):
+        @schema(strip_unknown=True)
+        class A:
             a: float = Options(parser=float, serializer=int)
-
-            class Meta:
-                strip_unknown = True
 
         a = A(a="1.1", b="1.1")
         assert a.a == 1.1
-        assert a.to_dict() == {"a": 1}
+        assert to_dict(a) == {"a": 1}
 
-        class A(Schema):
+        @schema
+        class A:
             a: float = Options(parser=float, serializer=int)
 
         with self.assertRaises(TypeError):
             A(a="1.1", b="1.1")
 
-        class A(Schema):
+        @schema
+        class A:
             a: float = Options(parser=float, serializer=int)
 
             class Meta:

@@ -2,7 +2,7 @@
 from typing import List, Dict
 from unittest import TestCase
 
-from validate_it import Schema, Options
+from validate_it import Options, schema, to_dict
 
 
 class DataclassTestCase(TestCase):
@@ -12,17 +12,20 @@ class DataclassTestCase(TestCase):
         except ImportError:
             return
 
+        @schema
         @dataclass
-        class Skill(Schema):
+        class Skill:
             level: int
             multiplier: float
 
+        @schema
         @dataclass
-        class Item(Schema):
+        class Item:
             title: str
 
+        @schema
         @dataclass
-        class Player(Schema):
+        class Player:
             name: str
 
             items: List[Item]
@@ -46,15 +49,15 @@ class DataclassTestCase(TestCase):
             }
         }
 
-        p = Player.from_dict(_data)
+        p = Player(**_data)
 
-        self.assertEqual(p.to_dict(), _data)
+        self.assertEqual(to_dict(p), _data)
         self.assertEqual(p.name, "John")
         self.assertEqual(p.items[0].title, "Rose")
         self.assertEqual(p.skills["ice"].level, 2)
 
         p = Player(**_data)
-        self.assertEqual(p.to_dict(), _data)
+        self.assertEqual(to_dict(p), _data)
 
     def test_dataclass_with_options(self):
         try:
@@ -62,17 +65,20 @@ class DataclassTestCase(TestCase):
         except ImportError:
             return
 
+        @schema
         @dataclass
-        class Skill(Schema):
+        class Skill:
             level: int
             multiplier: float
 
+        @schema
         @dataclass
-        class Item(Schema):
+        class Item:
             title: str
 
+        @schema
         @dataclass
-        class Player(Schema):
+        class Player:
             name: str
 
             items: List[Item] = Options(default=list)
@@ -85,9 +91,8 @@ class DataclassTestCase(TestCase):
             "skills": None
         }
 
-        Player.from_dict(_data).to_dict()
-        Player.from_dict(_data).to_dict()
-        Player(**_data).to_dict()
+        to_dict(Player(**_data))
+        to_dict(Player(**_data))
 
         _data = {
             "name": "John",
@@ -106,15 +111,15 @@ class DataclassTestCase(TestCase):
             }
         }
 
-        p = Player.from_dict(_data)
+        p = Player(**_data)
 
-        self.assertEqual(p.to_dict(), _data)
+        self.assertEqual(to_dict(p), _data)
         self.assertEqual(p.name, "John")
         self.assertEqual(p.items[0].title, "Rose")
         self.assertEqual(p.skills["ice"].level, 2)
 
         p = Player(**_data)
-        self.assertEqual(p.to_dict(), _data)
+        self.assertEqual(to_dict(p), _data)
 
     def test_missing_arguments(self):
         try:
@@ -122,18 +127,20 @@ class DataclassTestCase(TestCase):
         except ImportError:
             return
 
-        class A(Schema):
+        @schema
+        class A:
             a: str = Options(default="a")
             b: str = Options(default="b")
 
-        A.from_dict({"a": "c"})
+        A(a="c")
 
+        @schema
         @dataclass
-        class A(Schema):
+        class A:
             a: str = Options(default="a")
             b: str = Options(default="b")
 
-        A.from_dict({"a": "c"})
+        A(a="c")
 
     def test_map(self):
         try:
@@ -141,9 +148,10 @@ class DataclassTestCase(TestCase):
         except ImportError:
             return
 
+        @schema
         @dataclass
-        class A(Schema):
+        class A:
             a: int = Options(alias="_a")
             b: int = Options(alias="_b")
 
-        A.from_dict({"_a": 1, "_b": 2})
+        A(_a=1, _b=2)

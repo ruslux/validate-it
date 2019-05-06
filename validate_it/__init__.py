@@ -5,5 +5,8 @@ from .utils import *
 
 __all__ = [
     "Options",
-    "Schema",
+    "schema",
+    "to_dict",
+    "clone",
+    "representation",
 ]

@@ -36,7 +36,7 @@ class Options:
     alias: Optional[Union[str, Callable]]
     rename: Optional[Union[str, Callable]]
 
-    validators: Optional[List[Iterable[Callable]]]
+    validators: Optional[List[Callable]]
 
     parser: Optional[Callable]
 

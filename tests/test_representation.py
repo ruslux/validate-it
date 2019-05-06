@@ -1,15 +1,16 @@
 from unittest import TestCase
 
-from validate_it import Options, Schema
+from validate_it import Options, schema, representation
 
 
 class TestClone(TestCase):
     def test_representation(self):
-        class R(Schema):
+        @schema
+        class R:
             a: int = 0
             b: str = Options(min_length=3, max_length=10)
 
-        assert R.representation() == {
+        assert representation(R) == {
             "schema": {
                 "a": {
                     "default": 0,

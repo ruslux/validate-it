@@ -9,7 +9,7 @@ def _is_generic_alias(t, classes):
 
 
 def _repr(t, o):
-    from validate_it import Schema, Options
+    from validate_it import Options
 
     _d = {
         "required": o.required,
@@ -72,10 +72,10 @@ def _repr(t, o):
             }
         )
 
-    elif issubclass(t, Schema):
+    elif hasattr(t, '__options__'):
         _d.update(
             {
-                "type": "validate_it.Schema",
+                "type": "validate_it.schema",
                 "schema": t.representation()
             }
         )
@@ -105,8 +105,6 @@ def _repr(t, o):
 
 def _unwrap(value, t):
     """ Cast nested values types: List[NestedClass] -> List[Dict]"""
-    from validate_it import Schema
-
     if _is_generic_alias(t, Union):
         for arg in t.__args__:
             if _is_compatible(value, arg):
@@ -125,8 +123,9 @@ def _unwrap(value, t):
         }
 
     try:
-        if issubclass(t, Schema):
-            return value.to_dict()
+        if hasattr(t, '__options__'):
+            from validate_it import to_dict
+            return to_dict(value)
     except TypeError:
         pass
 
@@ -135,8 +134,6 @@ def _unwrap(value, t):
 
 def _wrap(value, t):
     """ Cast nested values types: List[Dict] -> List[NestedClass]"""
-    from validate_it import Schema
-
     if value is None:
         return None
 
@@ -158,8 +155,8 @@ def _wrap(value, t):
         }
 
     try:
-        if issubclass(t, Schema) and _is_compatible(value, dict):
-            result = t.from_dict(value)
+        if hasattr(t, '__options__') and _is_compatible(value, dict):
+            result = t(**value)
             return result
     except TypeError:
         pass
@@ -168,8 +165,6 @@ def _wrap(value, t):
 
 
 def _is_compatible(value, t):
-    from validate_it import Schema
-
     if t is Any:
         return True
 
@@ -195,7 +190,7 @@ def _is_compatible(value, t):
         return True
 
     try:
-        if issubclass(t, Schema) and _is_compatible(value, dict):
+        if hasattr(t, '__options__') and _is_compatible(value, dict):
             return True
     except TypeError:
         pass
