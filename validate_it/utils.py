@@ -1,11 +1,20 @@
-from inspect import getmembers, isroutine
-from typing import Dict, List, Union, TypeVar, Any
+import uuid
+from inspect import getmembers, isroutine, isclass
+from typing import Dict, TypeVar
+from typing import Union, List, Tuple, Type, Any
+
+from validate_it.errors import ValidationError
+from validate_it.options import Options
 
 
-def _is_generic_alias(t, classes):
+def is_schema(box_type):
+    return hasattr(box_type, '__options__')
+
+
+def is_generic_alias(box_type, classes):
     if not isinstance(classes, (list, tuple)):
         classes = (classes,)
-    return hasattr(t, "__origin__") and t.__origin__ in classes
+    return hasattr(box_type, "__origin__") and box_type.__origin__ in classes
 
 
 def _repr(t, o):
@@ -42,7 +51,7 @@ def _repr(t, o):
     if o.rename is not None:
         _d["rename to"] = o.rename if not callable(o.rename) else "dynamic"
 
-    if _is_generic_alias(t, Union):
+    if is_generic_alias(t, Union):
         _d.update(
             {
                 "type": "union",
@@ -53,7 +62,7 @@ def _repr(t, o):
             }
         )
 
-    elif _is_generic_alias(t, (list, List)):
+    elif is_generic_alias(t, (list, List)):
         _d.update(
             {
                 "type": "list",
@@ -63,7 +72,7 @@ def _repr(t, o):
             }
         )
 
-    elif _is_generic_alias(t, (dict, Dict)):
+    elif is_generic_alias(t, (dict, Dict)):
         _d.update(
             {
                 "type": "dict",
@@ -103,100 +112,91 @@ def _repr(t, o):
     return _d
 
 
-def _unwrap(value, t):
+def unpack_value(value, box_type):
     """ Cast nested values types: List[NestedClass] -> List[Dict]"""
-    if _is_generic_alias(t, Union):
-        for arg in t.__args__:
-            if _is_compatible(value, arg):
-                return _unwrap(value, arg)
+    if is_generic_alias(box_type, Union):
+        for arg in box_type.__args__:
+            if is_compatible(value, arg):
+                return unpack_value(value, arg)
 
-    if _is_generic_alias(t, (list, List)) and _is_compatible(value, list):
+    if is_generic_alias(box_type, (list, List)) and is_compatible(value, list):
         return [
-            _unwrap(item, t.__args__[0])
+            unpack_value(item, box_type.__args__[0])
             for item in value
         ]
 
-    if _is_generic_alias(t, (dict, Dict)):
+    if is_generic_alias(box_type, (dict, Dict)):
         return {
-            _unwrap(k, t.__args__[0]): _unwrap(v, t.__args__[1])
+            unpack_value(k, box_type.__args__[0]): unpack_value(v, box_type.__args__[1])
             for k, v in value.items()
         }
 
-    try:
-        if hasattr(t, '__options__'):
-            from validate_it import to_dict
-            return to_dict(value)
-    except TypeError:
-        pass
+    if is_schema(box_type):
+        from validate_it import to_dict
+        return to_dict(value)
 
     return value
 
 
-def _wrap(value, t):
+def pack_value(value, box_type):
     """ Cast nested values types: List[Dict] -> List[NestedClass]"""
     if value is None:
         return None
 
-    if _is_generic_alias(t, Union):
-        for arg in t.__args__:
-            if _is_compatible(value, arg):
-                return _wrap(value, arg)
+    if is_generic_alias(box_type, Union):
+        for arg in box_type.__args__:
+            if is_compatible(value, arg):
+                return pack_value(value, arg)
 
-    if _is_generic_alias(t, (list, List)) and _is_compatible(value, list):
+    if is_generic_alias(box_type, (list, List)) and is_compatible(value, list):
         return [
-            _wrap(item, t.__args__[0])
+            pack_value(item, box_type.__args__[0])
             for item in value
         ]
 
-    if _is_generic_alias(t, (dict, Dict)):
+    if is_generic_alias(box_type, (dict, Dict)):
         return {
-            _wrap(k, t.__args__[0]): _wrap(v, t.__args__[1])
+            pack_value(k, box_type.__args__[0]): pack_value(v, box_type.__args__[1])
             for k, v in value.items()
         }
 
-    try:
-        if hasattr(t, '__options__') and _is_compatible(value, dict):
-            result = t(**value)
-            return result
-    except TypeError:
-        pass
+    if hasattr(box_type, '__options__') and is_compatible(value, dict):
+        result = box_type(**value)
+        return result
 
     return value
 
 
-def _is_compatible(value, t):
-    if t is Any:
+def is_compatible(value, box_type):
+    if box_type is Any:
         return True
 
-    if isinstance(t, TypeVar):
+    if isinstance(box_type, TypeVar):
         return True
 
-    if _is_generic_alias(t, Union):
-        for arg in t.__args__:
-            if _is_compatible(value, arg):
+    if is_generic_alias(box_type, Union):
+        for arg in box_type.__args__:
+            if is_compatible(value, arg):
                 return True
 
-    if _is_generic_alias(t, (list, List)) and _is_compatible(value, list):
+    if is_generic_alias(box_type, (list, List)) and is_compatible(value, list):
         for item in value:
-            if not _is_compatible(item, t.__args__[0]):
+            if not is_compatible(item, box_type.__args__[0]):
                 return False
         else:
             return True
 
-    if _is_generic_alias(t, (dict, Dict)):
+    if is_generic_alias(box_type, (dict, Dict)):
         for k, v in value.items():
-            if not _is_compatible(k, t.__args__[0]) or not _is_compatible(v, t.__args__[1]):
+            if not is_compatible(k, box_type.__args__[0]) or not is_compatible(v, box_type.__args__[1]):
                 return False
         return True
 
-    try:
-        if hasattr(t, '__options__') and _is_compatible(value, dict):
-            return True
-    except TypeError:
-        pass
+    if hasattr(box_type, '__options__') and is_compatible(value, dict):
+        return True
 
     try:
-        return isinstance(value, t)
+        return isinstance(value, box_type)
     except TypeError:
         return False
 
@@ -225,6 +225,352 @@ def choices_from_enum(cls):
     return tuple(choices)
 
 
+def validate(o: Options, k, v):
+    v = _convert(o, k, v)
+    v = _check_types(o, k, v)
+
+    # use o other
+    v = _validate_allowed(o, k, v)
+    v = _validate_min_value(o, k, v)
+    v = _validate_max_value(o, k, v)
+    v = _validate_min_length(o, k, v)
+    v = _validate_max_length(o, k, v)
+    v = _validate_size(o, k, v)
+    v = _walk_validators(o, k, v)
+
+    return v
+
+
+def _convert(o: Options, k, v):
+    if not is_compatible(v, o.get_type()) and o.parser:
+        converted = o.parser(v)
+
+        if converted is not None:
+            v = converted
+
+    return v
+
+
+def _check_types(o: Options, k, v):
+    if not is_compatible(v, o.get_type()):
+        raise ValidationError(f"Field `{k}`: {o.get_type()} is not compatible with value `{v}`:{type(v)}")
+
+    return v
+
+
+def _validate_allowed(o: Options, k, v):
+    allowed = o.allowed
+
+    if callable(o.allowed):
+        allowed = o.allowed()
+
+    if allowed and v not in allowed:
+        raise ValidationError(f"Field `{k}`: value `{v}` is not allowed. Allowed vs: `{allowed}`")
+
+    return v
+
+
+def _validate_min_length(o: Options, k, v):
+    min_length = o.min_length
+
+    if callable(min_length):
+        min_length = min_length()
+
+    if min_length is not None and len(v) < min_length:
+        raise ValidationError(f"Field `{k}`: len(`{v}`) is less than required")
+
+    return v
+
+
+def _validate_max_length(o: Options, k, v):
+    max_length = o.max_length
+
+    if callable(max_length):
+        max_length = max_length()
+
+    if max_length is not None and len(v) > max_length:
+        raise ValidationError(f"Field `{k}`: len(`{v}`) is greater than required")
+
+    return v
+
+
+def _validate_min_value(o: Options, k, v):
+    min_value = o.min_value
+
+    if callable(min_value):
+        min_value = min_value()
+
+    if min_value is not None and v < min_value:
+        raise ValidationError(f"Field `{k}`: value `{v}` is less than required")
+
+    return v
+
+
+def _validate_max_value(o: Options, k, v):
+    max_value = o.max_value
+
+    if callable(max_value):
+        max_value = max_value()
+
+    if max_value is not None and v > max_value:
+        raise ValidationError(f"Field `{k}`: value `{v}` is greater than required")
+
+    return v
+
+
+def _validate_size(o: Options, k, v):
+    size = o.size
+
+    if callable(size):
+        size = size()
+
+    if size is not None and size != len(v):
+        raise ValidationError(f"Field `{k}`: len(`{v}`) is not equal `{size}`")
+
+    return v
+
+
+def _walk_validators(o: Options, k, v):
+    validators = o.validators
+
+    if validators:
+        for validator in validators:
+            v = validator(k, v)
+
+    return v
+
+
+def _replace_init(cls, strip_unknown=False):
+    origin = cls.__init__
+
+    def __init__(self, **kwargs) -> None:
+        kwargs = _map(cls, kwargs, strip_unknown=strip_unknown)
+        kwargs = _set_defaults(self, kwargs)
+
+        for k, o in self.__options__.items():
+            v = kwargs.get(k)
+            v = pack_value(v, o.get_type())
+
+            kwargs[k] = validate(o, k, v)
+        try:
+            origin(self, **kwargs)
+            return
+        except TypeError:
+            pass
+
+        origin(self)
+
+        for k, o in self.__options__.items():
+            v = kwargs.get(k)
+            setattr(self, k, v)
+
+    cls.__init__ = __init__
+
+
+def _replace_setattr(cls):
+    origin = cls.__setattr__
+
+    def __setattr__(self, key, value):
+        o = self.__options__.get(key)
+
+        if o:
+            value = validate(o, key, value)
+
+        origin(self, key, value)
+
+    cls.__setattr__ = __setattr__
+
+
+def _replace_getattribute(cls):
+    origin = cls.__getattribute__
+
+    def __getattribute__(self, name: str) -> Any:
+        # if name == "__options__":
+        #     return self.__class__.__options__
+
+        return origin(self, name)
+
+    cls.__getattribute__ = __getattribute__
+
+
+def _map(cls, data, strip_unknown=False):
+    _new = {}
+    _expected = []
+
+    for key, value in cls.__options__.items():
+        try:
+            _new[key] = data[key]
+            _expected.append(key)
+        except KeyError:
+            if value.alias:
+                try:
+                    _new[key] = data[value.alias]
+                    _expected.append(value.alias)
+                except KeyError:
+                    pass
+
+    if not strip_unknown:
+        _schema_keys = set(_expected)
+        _kwargs_keys = set(data.keys())
+
+        _unexpected = _kwargs_keys - _schema_keys
+
+        if len(_unexpected):
+            raise ValidationError(f"__new__() got an unexpected keyword arguments {_unexpected}")
+
+    return _new
+
+
+def _set_defaults(instance, data):
+    for key, options in instance.__options__.items():
+        value = data.get(key)
+
+        if value is None and options.default is not None:
+            if callable(options.default):
+                value = options.default()
+            else:
+                value = options.default
+
+            data[key] = value
+
+    return data
+
+
+def _set_options(cls):
+    if not hasattr(cls, "__options__"):
+        cls.__options__ = {}
+
+    _keys = set()
+
+    attributes = getmembers(
+        cls, lambda _field: not isroutine(_field) and not isclass(_field)
+    )
+
+    for key, value in attributes:
+        if not key.startswith("__") and not key.endswith("__"):
+            if isinstance(value, Options):
+                cls.__options__[key] = value
+            else:
+                cls.__options__[key] = Options(default=value)
+
+    if hasattr(cls, '__annotations__'):
+        for key, _type in cls.__annotations__.items():
+            if key not in cls.__options__.keys():
+                cls.__options__[key] = Options()
+
+
+def _set_options_type(cls):
+    if hasattr(cls, '__annotations__'):
+        for key, _type in cls.__annotations__.items():
+            cls.__options__[key].set_type(_type)
+
+
+def _set_options_required(cls):
+    if hasattr(cls, '__annotations__'):
+        for key, _type in cls.__annotations__.items():
+
+            if hasattr(_type, "__origin__") and _type.__origin__ == Union and None in _type.__args__:
+                cls.__options__[key].required = False
+
+
+def _set_options_type_any(cls):
+    for key, options in cls.__options__.items():
+        if not options.get_type():
+            options.set_type(Any)
+
+
+def _init_schema(cls, strip_unknown=False):
+    _set_options(cls)
+    _set_options_type(cls)
+    _set_options_required(cls)
+    _set_options_type_any(cls)
+
+    _replace_init(cls, strip_unknown)
+    _replace_setattr(cls)
+
+
+def representation(cls):
+    return {
+        "schema": {
+            k: _repr(o.get_type(), o)
+            for k, o in cls.__options__.items()
+        }
+    }
+
+
+def _expected_name(instance, name):
+    if name in instance.__options__.keys():
+        rename = instance.__options__[name].rename
+
+        if rename:
+            return rename
+
+    return name
+
+
+def to_dict(instance) -> dict:
+    _data = {}
+
+    for k, o in instance.__options__.items():
+        if o.required:
+            value = getattr(instance, k)
+
+            _unwrapped = unpack_value(value, o.get_type())
+
+            if _unwrapped is not None:
+                if o.serializer:
+                    _unwrapped = o.serializer(_unwrapped)
+
+                _data[_expected_name(instance, k)] = _unwrapped
+
+    return _data
+
+
+def clone(cls, strip_unknown=False, exclude=None, include=None, add: List[Tuple[str, Type, Options]] = None):
+    if exclude and include:
+        raise ValueError("cannot specify both exclude and include")
+
+    _dict = {
+        "__options__": {}
+    }
+
+    _drop = set()
+
+    if not hasattr(cls, "__options__"):
+        raise TypeError("Cloned class must be schema")
+
+    for k, v in cls.__dict__.items():
+        if k not in ["__options__"] + list(cls.__options__.keys()):
+            _dict[k] = v
+
+    if include:
+        include = set(include)
+        _all = set(cls.__options__.keys())
+
+        _drop = _all - include
+
+    if exclude:
+        _drop = set(exclude)
+
+    for k, o in cls.__options__.items():
+        if k not in _drop:
+            _dict["__options__"][k] = o
+
+    if add:
+        for k, t, o in add:
+            o.set_type(t)
+            _dict["__options__"][k] = o
+
+    new_cls = type(
+        f"DynamicCloneOf{cls.__name__}_{uuid.uuid4().hex}", cls.__bases__, _dict
+    )
+
+    return new_cls
+
+
 __all__ = [
+    "to_dict",
+    "representation",
+    "clone",
     "choices_from_enum"
 ]

@@ -1,7 +1,7 @@
 from typing import Optional, List, Dict, Tuple
 from unittest import TestCase
 
-from validate_it import Options, schema, to_dict
+from validate_it import Options, schema, to_dict, ValidationError
 
 
 @schema
@@ -35,7 +35,7 @@ class TypesTestCase(TestCase):
             _dict: dict
             _list: list
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             A()
 
         _data = {
@@ -112,7 +112,7 @@ class TypesTestCase(TestCase):
 
         _data = {}
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             to_dict(A(**_data))
 
     def test_not_required_default(self):
@@ -167,7 +167,7 @@ class TypesTestCase(TestCase):
         class A:
             a: int = Options(allowed=[1, 2])
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             A(a=3)
 
         A(a=1)
@@ -177,7 +177,7 @@ class TypesTestCase(TestCase):
         class A:
             a: int = Options(allowed=lambda: [1, 2])
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             A(a=3)
 
         A(a=1)
@@ -190,10 +190,10 @@ class TypesTestCase(TestCase):
 
         A(a=10, b=20)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             to_dict(A(a=9, b=20))
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             to_dict(A(a=10, b=21))
 
     def test_length(self):
@@ -204,10 +204,10 @@ class TypesTestCase(TestCase):
 
         A(a="12", b="12345")
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             A(a="1", b="12345")
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValidationError):
             A(a="12", b="123456")
 
     def test_convert(self):
@@ -248,10 +248,10 @@ class TypesTestCase(TestCase):
             a: list
             b: dict
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             A(a={1: 1}, b={1: 1})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             A(a=[1, 1], b=[1, 1])
 
         self.assertEqual(
@@ -268,10 +268,10 @@ class TypesTestCase(TestCase):
             a: tuple
             b: Tuple[int, int, float]
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             A(a=[1, 2, 3], b={1, 2, 3.0})
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             A(a={1, 2, 3}, b={1, 2, 3})
 
     def test_typevar(self):
@@ -298,7 +298,7 @@ class TypesTestCase(TestCase):
 
         assert to_dict(a) == {"a": [], "b": [1], "c": {"a": "b"}, "d": {1: 2}}
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             a.a = {}
 
         a.a = [100]
@@ -327,7 +327,7 @@ class TypesTestCase(TestCase):
         class A:
             a: float = Options(parser=float, serializer=int)
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             A(a="1.1", b="1.1")
 
         @schema
@@ -337,5 +337,5 @@ class TypesTestCase(TestCase):
             class Meta:
                 some_field = 3
 
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             A(a="1.1", b="1.1")
