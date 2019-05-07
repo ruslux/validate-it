@@ -193,7 +193,11 @@ def is_compatible(value, box_type):
         return True
 
     if hasattr(box_type, '__options__') and is_compatible(value, dict):
-        return True
+        try:
+            box_type(**value)
+            return True
+        except ValidationError:
+            pass
 
     try:
         return isinstance(value, box_type)

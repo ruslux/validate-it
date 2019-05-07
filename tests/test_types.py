@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, Union
 from unittest import TestCase
 
 from validate_it import Options, schema, to_dict, ValidationError
@@ -339,3 +339,25 @@ class TypesTestCase(TestCase):
 
         with self.assertRaises(ValidationError):
             A(a="1.1", b="1.1")
+
+    def test_union(self):
+        @schema
+        class A:
+            a: int
+
+        @schema
+        class B:
+            b: float
+
+        @schema
+        class C:
+            c: Union[A, B]
+
+        a = {'a': 1}
+        b = {'b': 0.1}
+
+        C(c=a)
+        C(c=b)
+
+        with self.assertRaises(ValidationError):
+            C(c={'a': 0.1})
