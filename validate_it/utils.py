@@ -229,18 +229,18 @@ def choices_from_enum(cls):
     return tuple(choices)
 
 
-def validate(o: Options, k, v):
+def validate(name, o: Options, k, v):
     v = _convert(o, k, v)
-    v = _check_types(o, k, v)
+    v = _check_types(name, o, k, v)
 
     # use o other
-    v = _validate_allowed(o, k, v)
-    v = _validate_min_value(o, k, v)
-    v = _validate_max_value(o, k, v)
-    v = _validate_min_length(o, k, v)
-    v = _validate_max_length(o, k, v)
-    v = _validate_size(o, k, v)
-    v = _walk_validators(o, k, v)
+    v = _validate_allowed(name, o, k, v)
+    v = _validate_min_value(name, o, k, v)
+    v = _validate_max_value(name, o, k, v)
+    v = _validate_min_length(name, o, k, v)
+    v = _validate_max_length(name, o, k, v)
+    v = _validate_size(name, o, k, v)
+    v = _walk_validators(name, o, k, v)
 
     return v
 
@@ -255,91 +255,91 @@ def _convert(o: Options, k, v):
     return v
 
 
-def _check_types(o: Options, k, v):
+def _check_types(name, o: Options, k, v):
     if not is_compatible(v, o.get_type()):
-        raise ValidationError(f"Field `{k}`: {o.get_type()} is not compatible with value `{v}`:{type(v)}")
+        raise ValidationError(f"Field `{name}#{k}`: {o.get_type()} is not compatible with value `{v}`:{type(v)}")
 
     return v
 
 
-def _validate_allowed(o: Options, k, v):
+def _validate_allowed(name, o: Options, k, v):
     allowed = o.allowed
 
     if callable(o.allowed):
         allowed = o.allowed()
 
     if allowed and v not in allowed:
-        raise ValidationError(f"Field `{k}`: value `{v}` is not allowed. Allowed vs: `{allowed}`")
+        raise ValidationError(f"Field `{name}#{k}`: value `{v}` is not allowed. Allowed vs: `{allowed}`")
 
     return v
 
 
-def _validate_min_length(o: Options, k, v):
+def _validate_min_length(name, o: Options, k, v):
     min_length = o.min_length
 
     if callable(min_length):
         min_length = min_length()
 
     if min_length is not None and len(v) < min_length:
-        raise ValidationError(f"Field `{k}`: len(`{v}`) is less than required")
+        raise ValidationError(f"Field `{name}#{k}`: len(`{v}`) is less than required")
 
     return v
 
 
-def _validate_max_length(o: Options, k, v):
+def _validate_max_length(name, o: Options, k, v):
     max_length = o.max_length
 
     if callable(max_length):
         max_length = max_length()
 
     if max_length is not None and len(v) > max_length:
-        raise ValidationError(f"Field `{k}`: len(`{v}`) is greater than required")
+        raise ValidationError(f"Field `{name}#{k}`: len(`{v}`) is greater than required")
 
     return v
 
 
-def _validate_min_value(o: Options, k, v):
+def _validate_min_value(name, o: Options, k, v):
     min_value = o.min_value
 
     if callable(min_value):
         min_value = min_value()
 
     if min_value is not None and v < min_value:
-        raise ValidationError(f"Field `{k}`: value `{v}` is less than required")
+        raise ValidationError(f"Field `{name}#{k}`: value `{v}` is less than required")
 
     return v
 
 
-def _validate_max_value(o: Options, k, v):
+def _validate_max_value(name, o: Options, k, v):
     max_value = o.max_value
 
     if callable(max_value):
         max_value = max_value()
 
     if max_value is not None and v > max_value:
-        raise ValidationError(f"Field `{k}`: value `{v}` is greater than required")
+        raise ValidationError(f"Field `{name}#{k}`: value `{v}` is greater than required")
 
     return v
 
 
-def _validate_size(o: Options, k, v):
+def _validate_size(name, o: Options, k, v):
     size = o.size
 
     if callable(size):
         size = size()
 
     if size is not None and size != len(v):
-        raise ValidationError(f"Field `{k}`: len(`{v}`) is not equal `{size}`")
+        raise ValidationError(f"Field `{name}#{k}`: len(`{v}`) is not equal `{size}`")
 
     return v
 
 
-def _walk_validators(o: Options, k, v):
+def _walk_validators(name, o: Options, k, v):
     validators = o.validators
 
     if validators:
         for validator in validators:
-            v = validator(k, v)
+            v = validator(name, k, v)
 
     return v
 
@@ -355,7 +355,7 @@ def _replace_init(cls, strip_unknown=False):
             v = kwargs.get(k)
             v = pack_value(v, o.get_type())
 
-            kwargs[k] = validate(o, k, v)
+            kwargs[k] = validate(self.__class__.__name__, o, k, v)
         try:
             origin(self, **kwargs)
             return
@@ -378,7 +378,7 @@ def _replace_setattr(cls):
         o = self.__options__.get(key)
 
         if o:
-            value = validate(o, key, value)
+            value = validate(self.__class__.__name__, o, key, value)
 
         origin(self, key, value)
 
@@ -420,7 +420,7 @@ def _map(cls, data, strip_unknown=False):
         _unexpected = _kwargs_keys - _schema_keys
 
         if len(_unexpected):
-            raise ValidationError(f"__new__() got an unexpected keyword arguments {_unexpected}")
+            raise ValidationError(f"{cls}.__new__() got an unexpected keyword arguments {_unexpected}")
 
     return _new
 
@@ -532,7 +532,7 @@ def to_dict(instance) -> dict:
 
 def clone(cls, strip_unknown=False, exclude=None, include=None, add: List[Tuple[str, Type, Options]] = None):
     if exclude and include:
-        raise ValueError("cannot specify both exclude and include")
+        raise ValueError(f"{cls}: Cannot specify both exclude and include")
 
     _dict = {
         "__options__": {}
@@ -541,7 +541,7 @@ def clone(cls, strip_unknown=False, exclude=None, include=None, add: List[Tuple[
     _drop = set()
 
     if not hasattr(cls, "__options__"):
-        raise TypeError("Cloned class must be schema")
+        raise TypeError(f"Cloned class {cls} must be schema")
 
     for k, v in cls.__dict__.items():
         if k not in ["__options__"] + list(cls.__options__.keys()):

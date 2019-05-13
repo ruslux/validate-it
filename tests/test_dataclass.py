@@ -1,8 +1,8 @@
 
-from typing import List, Dict
+from typing import List, Dict, Union
 from unittest import TestCase
 
-from validate_it import Options, schema, to_dict
+from validate_it import Options, schema, to_dict, ValidationError
 
 
 class DataclassTestCase(TestCase):
@@ -155,3 +155,39 @@ class DataclassTestCase(TestCase):
             b: int = Options(alias="_b")
 
         A(_a=1, _b=2)
+
+    def test_union(self):
+        try:
+            from dataclasses import dataclass
+        except ImportError:
+            return
+
+        @schema
+        @dataclass
+        class Nested:
+            nested: int
+
+        @schema
+        @dataclass
+        class A:
+            a: int
+            nested: Nested
+
+        @schema
+        @dataclass
+        class B:
+            b: float
+
+        @schema
+        @dataclass
+        class C:
+            c: Union[A, B]
+
+        a = {'a': 1, 'nested': {'nested': 2}}
+        b = {'b': 0.1}
+
+        C(c=a)
+        C(c=b)
+
+        with self.assertRaises(ValidationError):
+            C(c={'a': 0.1})

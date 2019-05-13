@@ -8,7 +8,7 @@ class IsNotEmailError(Exception):
     pass
 
 
-def is_email(key, value):
+def is_email(name, key, value):
     if not re.match(r"[^@]+@[^@]+\.[^@]+", value):
         raise IsNotEmailError()
 
