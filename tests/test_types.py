@@ -379,3 +379,30 @@ class TypesTestCase(TestCase):
             to_dict(b),
             {"s": "s", "nested_with_elements": {1: {"i": 2}}}
         )
+
+    def test_optional_dict_with_default(self):
+        @schema
+        class A:
+            i: int
+
+        @schema
+        class B:
+            nested: A
+
+        @schema
+        class C:
+            s: str
+            nested_with_elements: Optional[Dict[int, B]] = Options()
+            nested_empty: Optional[Dict[int, B]] = Options()
+
+        c = C(s="s", nested_with_elements={1: {"nested": {"i": 2}}})
+
+        self.assertEqual(c.s, "s")
+
+        self.assertEqual(
+            to_dict(c),
+            {"s": "s", "nested_with_elements": {1: {"nested": {"i": 2}}}}
+        )
+
+        c.nested_with_elements[1].nested = {"i": 10}
+        to_dict(c)

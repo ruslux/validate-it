@@ -132,7 +132,6 @@ def unpack_value(value, box_type):
         }
 
     if is_schema(box_type):
-        from validate_it import to_dict
         return to_dict(value)
 
     return value
@@ -353,8 +352,8 @@ def _replace_init(cls, strip_unknown=False):
 
         for k, o in self.__validate_it__options__.items():
             v = kwargs.get(k)
-            v = pack_value(v, o.get_type())
 
+            v = pack_value(v, o.get_type())
             kwargs[k] = validate(self.__class__.__name__, o, k, v)
         try:
             origin(self, **kwargs)
@@ -378,6 +377,7 @@ def _replace_setattr(cls):
         o = self.__validate_it__options__.get(key)
 
         if o:
+            value = pack_value(value, o.get_type())
             value = validate(self.__class__.__name__, o, key, value)
 
         origin(self, key, value)
@@ -507,13 +507,13 @@ def to_dict(instance) -> dict:
         if o.required:
             value = getattr(instance, k)
 
-            _unwrapped = unpack_value(value, o.get_type())
+            _value = unpack_value(value, o.get_type())
 
-            if _unwrapped is not None:
+            if _value is not None:
                 if o.serializer:
-                    _unwrapped = o.serializer(_unwrapped)
+                    _value = o.serializer(_value)
 
-                _data[_expected_name(instance, k)] = _unwrapped
+                _data[_expected_name(instance, k)] = _value
 
     return _data
 
