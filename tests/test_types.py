@@ -361,3 +361,21 @@ class TypesTestCase(TestCase):
 
         with self.assertRaises(ValidationError):
             C(c={'a': 0.1})
+
+    def test_optional_dict(self):
+        @schema
+        class A:
+            i: int
+
+        @schema
+        class B:
+            s: str
+            nested_with_elements: Optional[Dict[int, A]]
+            nested_empty: Optional[Dict[int, A]]
+
+        b = B(s="s", nested_with_elements={1: {"i": 2}})
+
+        self.assertEqual(
+            to_dict(b),
+            {"s": "s", "nested_with_elements": {1: {"i": 2}}}
+        )

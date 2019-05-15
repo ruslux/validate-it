@@ -8,7 +8,7 @@ from validate_it.options import Options
 
 
 def is_schema(box_type):
-    return hasattr(box_type, '__options__')
+    return hasattr(box_type, '__validate_it__options__')
 
 
 def is_generic_alias(box_type, classes):
@@ -81,7 +81,7 @@ def _repr(t, o):
             }
         )
 
-    elif hasattr(t, '__options__'):
+    elif hasattr(t, '__validate_it__options__'):
         _d.update(
             {
                 "type": "validate_it.schema",
@@ -160,7 +160,7 @@ def pack_value(value, box_type):
             for k, v in value.items()
         }
 
-    if hasattr(box_type, '__options__') and is_compatible(value, dict):
+    if hasattr(box_type, '__validate_it__options__') and is_compatible(value, dict):
         result = box_type(**value)
         return result
 
@@ -186,13 +186,13 @@ def is_compatible(value, box_type):
         else:
             return True
 
-    if is_generic_alias(box_type, (dict, Dict)):
+    if is_generic_alias(box_type, (dict, Dict)) and is_compatible(value, dict):
         for k, v in value.items():
             if not is_compatible(k, box_type.__args__[0]) or not is_compatible(v, box_type.__args__[1]):
                 return False
         return True
 
-    if hasattr(box_type, '__options__') and is_compatible(value, dict):
+    if hasattr(box_type, '__validate_it__options__') and is_compatible(value, dict):
         try:
             box_type(**value)
             return True
@@ -351,7 +351,7 @@ def _replace_init(cls, strip_unknown=False):
         kwargs = _map(cls, kwargs, strip_unknown=strip_unknown)
         kwargs = _set_defaults(self, kwargs)
 
-        for k, o in self.__options__.items():
+        for k, o in self.__validate_it__options__.items():
             v = kwargs.get(k)
             v = pack_value(v, o.get_type())
 
@@ -364,7 +364,7 @@ def _replace_init(cls, strip_unknown=False):
 
         origin(self)
 
-        for k, o in self.__options__.items():
+        for k, o in self.__validate_it__options__.items():
             v = kwargs.get(k)
             setattr(self, k, v)
 
@@ -375,7 +375,7 @@ def _replace_setattr(cls):
     origin = cls.__setattr__
 
     def __setattr__(self, key, value):
-        o = self.__options__.get(key)
+        o = self.__validate_it__options__.get(key)
 
         if o:
             value = validate(self.__class__.__name__, o, key, value)
@@ -385,23 +385,11 @@ def _replace_setattr(cls):
     cls.__setattr__ = __setattr__
 
 
-def _replace_getattribute(cls):
-    origin = cls.__getattribute__
-
-    def __getattribute__(self, name: str) -> Any:
-        # if name == "__options__":
-        #     return self.__class__.__options__
-
-        return origin(self, name)
-
-    cls.__getattribute__ = __getattribute__
-
-
 def _map(cls, data, strip_unknown=False):
     _new = {}
     _expected = []
 
-    for key, value in cls.__options__.items():
+    for key, value in cls.__validate_it__options__.items():
         try:
             _new[key] = data[key]
             _expected.append(key)
@@ -426,7 +414,7 @@ def _map(cls, data, strip_unknown=False):
 
 
 def _set_defaults(instance, data):
-    for key, options in instance.__options__.items():
+    for key, options in instance.__validate_it__options__.items():
         value = data.get(key)
 
         if value is None and options.default is not None:
@@ -441,8 +429,8 @@ def _set_defaults(instance, data):
 
 
 def _set_options(cls):
-    if not hasattr(cls, "__options__"):
-        cls.__options__ = {}
+    if not hasattr(cls, "__validate_it__options__"):
+        cls.__validate_it__options__ = {}
 
     _keys = set()
 
@@ -453,20 +441,20 @@ def _set_options(cls):
     for key, value in attributes:
         if not key.startswith("__") and not key.endswith("__"):
             if isinstance(value, Options):
-                cls.__options__[key] = value
+                cls.__validate_it__options__[key] = value
             else:
-                cls.__options__[key] = Options(default=value)
+                cls.__validate_it__options__[key] = Options(default=value)
 
     if hasattr(cls, '__annotations__'):
         for key, _type in cls.__annotations__.items():
-            if key not in cls.__options__.keys():
-                cls.__options__[key] = Options()
+            if key not in cls.__validate_it__options__.keys():
+                cls.__validate_it__options__[key] = Options()
 
 
 def _set_options_type(cls):
     if hasattr(cls, '__annotations__'):
         for key, _type in cls.__annotations__.items():
-            cls.__options__[key].set_type(_type)
+            cls.__validate_it__options__[key].set_type(_type)
 
 
 def _set_options_required(cls):
@@ -474,11 +462,11 @@ def _set_options_required(cls):
         for key, _type in cls.__annotations__.items():
 
             if hasattr(_type, "__origin__") and _type.__origin__ == Union and None in _type.__args__:
-                cls.__options__[key].required = False
+                cls.__validate_it__options__[key].required = False
 
 
 def _set_options_type_any(cls):
-    for key, options in cls.__options__.items():
+    for key, options in cls.__validate_it__options__.items():
         if not options.get_type():
             options.set_type(Any)
 
@@ -497,14 +485,14 @@ def representation(cls):
     return {
         "schema": {
             k: _repr(o.get_type(), o)
-            for k, o in cls.__options__.items()
+            for k, o in cls.__validate_it__options__.items()
         }
     }
 
 
 def _expected_name(instance, name):
-    if name in instance.__options__.keys():
-        rename = instance.__options__[name].rename
+    if name in instance.__validate_it__options__.keys():
+        rename = instance.__validate_it__options__[name].rename
 
         if rename:
             return rename
@@ -515,7 +503,7 @@ def _expected_name(instance, name):
 def to_dict(instance) -> dict:
     _data = {}
 
-    for k, o in instance.__options__.items():
+    for k, o in instance.__validate_it__options__.items():
         if o.required:
             value = getattr(instance, k)
 
@@ -535,35 +523,35 @@ def clone(cls, strip_unknown=False, exclude=None, include=None, add: List[Tuple[
         raise ValueError(f"{cls}: Cannot specify both exclude and include")
 
     _dict = {
-        "__options__": {}
+        "__validate_it__options__": {}
     }
 
     _drop = set()
 
-    if not hasattr(cls, "__options__"):
+    if not hasattr(cls, "__validate_it__options__"):
         raise TypeError(f"Cloned class {cls} must be schema")
 
     for k, v in cls.__dict__.items():
-        if k not in ["__options__"] + list(cls.__options__.keys()):
+        if k not in ["__validate_it__options__"] + list(cls.__validate_it__options__.keys()):
             _dict[k] = v
 
     if include:
         include = set(include)
-        _all = set(cls.__options__.keys())
+        _all = set(cls.__validate_it__options__.keys())
 
         _drop = _all - include
 
     if exclude:
         _drop = set(exclude)
 
-    for k, o in cls.__options__.items():
+    for k, o in cls.__validate_it__options__.items():
         if k not in _drop:
-            _dict["__options__"][k] = o
+            _dict["__validate_it__options__"][k] = o
 
     if add:
         for k, t, o in add:
             o.set_type(t)
-            _dict["__options__"][k] = o
+            _dict["__validate_it__options__"][k] = o
 
     new_cls = type(
         f"DynamicCloneOf{cls.__name__}_{uuid.uuid4().hex}", cls.__bases__, _dict
