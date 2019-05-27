@@ -1,4 +1,4 @@
-
+from time import time
 from typing import List, Dict, Union
 from unittest import TestCase
 
@@ -191,3 +191,48 @@ class DataclassTestCase(TestCase):
 
         with self.assertRaises(ValidationError):
             C(c={'a': 0.1})
+
+    # # first: 0.9 sec
+    # # second: 1.1 sec
+    # # dual core i5 7 gen
+    # def test_performance(self):
+    #     try:
+    #         from dataclasses import dataclass
+    #     except ImportError:
+    #         return
+    #
+    #     @schema
+    #     @dataclass
+    #     class A:
+    #         a: int
+    #
+    #     @schema
+    #     @dataclass
+    #     class B:
+    #         b: float
+    #
+    #     @schema
+    #     @dataclass
+    #     class C:
+    #         c: Union[A, B]
+    #
+    #     a = {'a': 1}
+    #     C(c=a)
+    #
+    #     start = time()
+    #     for i in range(100000):
+    #         C(c=a)
+    #
+    #     end = time()
+    #     print(end - start)
+    #
+    #     start = time()
+    #     a = {'b': 1.0}
+    #
+    #     for i in range(100000):
+    #         C(c=a)
+    #
+    #     end = time()
+    #     print(end - start)
+    #
+    #     raise Exception

@@ -12,9 +12,13 @@ def is_schema(box_type):
 
 
 def is_generic_alias(box_type, classes):
-    if not isinstance(classes, (list, tuple)):
-        classes = (classes,)
-    return hasattr(box_type, "__origin__") and box_type.__origin__ in classes
+    if box_type in classes:
+        return True
+
+    try:
+        return box_type.__origin__ in classes
+    except AttributeError:
+        return False
 
 
 def _repr(t, o):
@@ -51,7 +55,7 @@ def _repr(t, o):
     if o.rename is not None:
         _d["rename to"] = o.rename if not callable(o.rename) else "dynamic"
 
-    if is_generic_alias(t, Union):
+    if is_generic_alias(t, (Union,)):
         _d.update(
             {
                 "type": "union",
@@ -114,18 +118,26 @@ def _repr(t, o):
 
 def unpack_value(value, box_type):
     """ Cast nested values types: List[NestedClass] -> List[Dict]"""
-    if is_generic_alias(box_type, Union):
-        for arg in box_type.__args__:
-            if is_compatible(value, arg):
-                return unpack_value(value, arg)
+    if box_type is dict and isinstance(value, dict):
+        return value
 
-    if is_generic_alias(box_type, (list, List)) and is_compatible(value, list):
+    if box_type is list and isinstance(value, list):
+        return value
+
+    if is_generic_alias(box_type, (Union,)):
+        for arg in box_type.__args__:
+            try:
+                return unpack_value(value, arg)
+            except ValidationError:
+                continue
+
+    if is_generic_alias(box_type, (list, List)) and isinstance(value, list):
         return [
             unpack_value(item, box_type.__args__[0])
             for item in value
         ]
 
-    if is_generic_alias(box_type, (dict, Dict)):
+    if is_generic_alias(box_type, (dict, Dict)) and isinstance(value, dict):
         return {
             unpack_value(k, box_type.__args__[0]): unpack_value(v, box_type.__args__[1])
             for k, v in value.items()
@@ -142,66 +154,76 @@ def pack_value(value, box_type):
     if value is None:
         return None
 
-    if is_generic_alias(box_type, Union):
-        for arg in box_type.__args__:
-            if is_compatible(value, arg):
-                return pack_value(value, arg)
+    if box_type is dict and isinstance(value, dict):
+        return value
 
-    if is_generic_alias(box_type, (list, List)) and is_compatible(value, list):
-        return [
-            pack_value(item, box_type.__args__[0])
-            for item in value
-        ]
-
-    if is_generic_alias(box_type, (dict, Dict)):
-        return {
-            pack_value(k, box_type.__args__[0]): pack_value(v, box_type.__args__[1])
-            for k, v in value.items()
-        }
+    if box_type is list and isinstance(value, list):
+        return value
 
     if hasattr(box_type, '__validate_it__options__') and is_compatible(value, dict):
         result = box_type(**value)
         return result
 
+    if is_generic_alias(box_type, (Union,)):
+        for arg in box_type.__args__:
+            try:
+                return pack_value(value, arg)
+            except ValidationError:
+                continue
+
+    if is_generic_alias(box_type, (list, List)) and isinstance(value, list):
+        return [
+            pack_value(item, box_type.__args__[0])
+            for item in value
+        ]
+
+    if is_generic_alias(box_type, (dict, Dict)) and isinstance(value, dict):
+        return {
+            pack_value(k, box_type.__args__[0]): pack_value(v, box_type.__args__[1])
+            for k, v in value.items()
+        }
+
     return value
 
 
 def is_compatible(value, box_type):
+    try:
+        return isinstance(value, box_type)
+    except TypeError:
+        pass
+
     if box_type is Any:
         return True
 
     if isinstance(box_type, TypeVar):
         return True
 
-    if is_generic_alias(box_type, Union):
-        for arg in box_type.__args__:
-            if is_compatible(value, arg):
-                return True
-
-    if is_generic_alias(box_type, (list, List)) and is_compatible(value, list):
-        for item in value:
-            if not is_compatible(item, box_type.__args__[0]):
-                return False
-        else:
-            return True
-
-    if is_generic_alias(box_type, (dict, Dict)) and is_compatible(value, dict):
-        for k, v in value.items():
-            if not is_compatible(k, box_type.__args__[0]) or not is_compatible(v, box_type.__args__[1]):
-                return False
-        return True
-
-    if hasattr(box_type, '__validate_it__options__') and is_compatible(value, dict):
+    if hasattr(box_type, '__validate_it__options__') and isinstance(value, dict):
         try:
             box_type(**value)
             return True
         except ValidationError:
             pass
 
-    try:
-        return isinstance(value, box_type)
-    except TypeError:
-        return False
+    if is_generic_alias(box_type, (Union,)):
+        for arg in box_type.__args__:
+            if is_compatible(value, arg):
+                return True
+
+    if is_generic_alias(box_type, (list, List)) and isinstance(value, list):
+        for item in value:
+            if not is_compatible(item, box_type.__args__[0]):
+                return False
+        else:
+            return True
+
+    if is_generic_alias(box_type, (dict, Dict)) and isinstance(value, dict):
+        for k, v in value.items():
+            if not is_compatible(k, box_type.__args__[0]) or not is_compatible(v, box_type.__args__[1]):
+                return False
+        return True
+
+    return False
 
 
 def getattr_or_default(obj, k, default=None):
