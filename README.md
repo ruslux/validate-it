@@ -116,8 +116,8 @@ class Characteristics:
 @schema
 class Car:
     name: str = Options(min_length=2, max_length=20)
-    owners: List[Owner]
-    characteristics: Characteristics = Options(default={"cc": 0.0, "hp": 0})
+    owners: List[Owner] = Options(auto_pack=True, packer=pack_value)
+    characteristics: Characteristics = Options(default=lambda: {"cc": 0.0, "hp": 0}, auto_pack=True, packer=pack_value)
     convert: bool = Options(parser=bool)
 
 

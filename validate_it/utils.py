@@ -1,4 +1,5 @@
 import uuid
+
 from inspect import getmembers, isroutine, isclass
 from typing import Dict, TypeVar
 from typing import Union, List, Tuple, Type, Any
@@ -89,7 +90,7 @@ def _repr(t, o):
         _d.update(
             {
                 "type": "validate_it.schema",
-                "schema": t.representation()
+                "schema": representation(t)
             }
         )
 
@@ -116,6 +117,15 @@ def _repr(t, o):
     return _d
 
 
+def representation(cls):
+    return {
+        "schema": {
+            k: _repr(o.get_type(), o)
+            for k, o in cls.__validate_it__options__.items()
+        }
+    }
+
+
 def unpack_value(value, box_type):
     """ Cast nested values types: List[NestedClass] -> List[Dict]"""
     if box_type is dict and isinstance(value, dict):
@@ -132,16 +142,27 @@ def unpack_value(value, box_type):
                 continue
 
     if is_generic_alias(box_type, (list, List)) and isinstance(value, list):
-        return [
-            unpack_value(item, box_type.__args__[0])
-            for item in value
-        ]
+        if box_type.__args__:
+            subtype = box_type.__args__[0]
+
+            return [
+                unpack_value(item, subtype)
+                for item in value
+            ]
+        else:
+            return value
 
     if is_generic_alias(box_type, (dict, Dict)) and isinstance(value, dict):
-        return {
-            unpack_value(k, box_type.__args__[0]): unpack_value(v, box_type.__args__[1])
-            for k, v in value.items()
-        }
+        if box_type.__args__:
+            subtype_0 = box_type.__args__[0]
+            subtype_1 = box_type.__args__[1]
+
+            return {
+                unpack_value(k, subtype_0): unpack_value(v, subtype_1)
+                for k, v in value.items()
+            }
+        else:
+            return value
 
     if is_schema(box_type):
         return to_dict(value)
@@ -172,14 +193,19 @@ def pack_value(value, box_type):
                 continue
 
     if is_generic_alias(box_type, (list, List)) and isinstance(value, list):
+        subtype = box_type.__args__[0]
+
         return [
-            pack_value(item, box_type.__args__[0])
+            pack_value(item, subtype)
             for item in value
         ]
 
     if is_generic_alias(box_type, (dict, Dict)) and isinstance(value, dict):
+        subtype_0 = box_type.__args__[0]
+        subtype_1 = box_type.__args__[1]
+
         return {
-            pack_value(k, box_type.__args__[0]): pack_value(v, box_type.__args__[1])
+            pack_value(k, subtype_0): pack_value(v, subtype_1)
             for k, v in value.items()
         }
 
@@ -198,30 +224,38 @@ def is_compatible(value, box_type):
     if isinstance(box_type, TypeVar):
         return True
 
-    if hasattr(box_type, '__validate_it__options__') and isinstance(value, dict):
-        try:
-            box_type(**value)
-            return True
-        except ValidationError:
-            pass
+    if hasattr(box_type, '__validate_it__options__') and \
+            hasattr(value, '__validate_it__options__'):
+        return True
 
-    if is_generic_alias(box_type, (Union,)):
-        for arg in box_type.__args__:
-            if is_compatible(value, arg):
-                return True
+    if is_generic_alias(box_type, (Union,)) and any(
+        map(
+            lambda arg: is_compatible(value, arg),
+            box_type.__args__
+        )
+    ):
+        return True
 
     if is_generic_alias(box_type, (list, List)) and isinstance(value, list):
-        for item in value:
-            if not is_compatible(item, box_type.__args__[0]):
-                return False
-        else:
-            return True
+        subtype = box_type.__args__[0]
+
+        return all(
+            map(
+                lambda x: is_compatible(x, subtype),
+                value
+            )
+        )
 
     if is_generic_alias(box_type, (dict, Dict)) and isinstance(value, dict):
-        for k, v in value.items():
-            if not is_compatible(k, box_type.__args__[0]) or not is_compatible(v, box_type.__args__[1]):
-                return False
-        return True
+        subtype_0 = box_type.__args__[0]
+        subtype_1 = box_type.__args__[1]
+
+        return all(
+            map(
+                lambda pair: is_compatible(pair[0], subtype_0) and is_compatible(pair[1], subtype_1),
+                value.items()
+            )
+        )
 
     return False
 
@@ -251,10 +285,10 @@ def choices_from_enum(cls):
 
 
 def validate(name, o: Options, k, v):
+    v = _set_default(o, k, v)
     v = _convert(o, k, v)
     v = _check_types(name, o, k, v)
 
-    # use o other
     v = _validate_allowed(name, o, k, v)
     v = _validate_min_value(name, o, k, v)
     v = _validate_max_value(name, o, k, v)
@@ -266,8 +300,21 @@ def validate(name, o: Options, k, v):
     return v
 
 
+def _set_default(o: Options, k, v):
+    if o.default is None:
+        return v
+
+    if v is None:
+        v = o.default
+
+        if v is not None:
+            if callable(v):
+                v = v()
+    return v
+
+
 def _convert(o: Options, k, v):
-    if not is_compatible(v, o.get_type()) and o.parser:
+    if o.parser and not is_compatible(v, o.get_type()):
         converted = o.parser(v)
 
         if converted is not None:
@@ -284,6 +331,9 @@ def _check_types(name, o: Options, k, v):
 
 
 def _validate_allowed(name, o: Options, k, v):
+    if o.allowed is None:
+        return v
+
     allowed = o.allowed
 
     if callable(o.allowed):
@@ -296,6 +346,9 @@ def _validate_allowed(name, o: Options, k, v):
 
 
 def _validate_min_length(name, o: Options, k, v):
+    if o.min_length is None:
+        return v
+
     min_length = o.min_length
 
     if callable(min_length):
@@ -308,6 +361,9 @@ def _validate_min_length(name, o: Options, k, v):
 
 
 def _validate_max_length(name, o: Options, k, v):
+    if o.max_length is None:
+        return v
+
     max_length = o.max_length
 
     if callable(max_length):
@@ -320,6 +376,9 @@ def _validate_max_length(name, o: Options, k, v):
 
 
 def _validate_min_value(name, o: Options, k, v):
+    if o.min_value is None:
+        return v
+
     min_value = o.min_value
 
     if callable(min_value):
@@ -332,6 +391,9 @@ def _validate_min_value(name, o: Options, k, v):
 
 
 def _validate_max_value(name, o: Options, k, v):
+    if o.max_value is None:
+        return v
+
     max_value = o.max_value
 
     if callable(max_value):
@@ -344,6 +406,9 @@ def _validate_max_value(name, o: Options, k, v):
 
 
 def _validate_size(name, o: Options, k, v):
+    if o.size is None:
+        return v
+
     size = o.size
 
     if callable(size):
@@ -356,6 +421,9 @@ def _validate_size(name, o: Options, k, v):
 
 
 def _walk_validators(name, o: Options, k, v):
+    if o.validators is None:
+        return v
+
     validators = o.validators
 
     if validators:
@@ -366,27 +434,14 @@ def _walk_validators(name, o: Options, k, v):
 
 
 def _replace_init(cls, strip_unknown=False):
-    origin = cls.__init__
-
     def __init__(self, **kwargs) -> None:
-        kwargs = _map(cls, kwargs, strip_unknown=strip_unknown)
-        kwargs = _set_defaults(self, kwargs)
+        mapped, unknown = _map(cls, kwargs)
+        _strip_unknown(cls, unknown, strip_unknown=strip_unknown)
+
+        get = mapped.get
 
         for k, o in self.__validate_it__options__.items():
-            v = kwargs.get(k)
-
-            v = pack_value(v, o.get_type())
-            kwargs[k] = validate(self.__class__.__name__, o, k, v)
-        try:
-            origin(self, **kwargs)
-            return
-        except TypeError:
-            pass
-
-        origin(self)
-
-        for k, o in self.__validate_it__options__.items():
-            v = kwargs.get(k)
+            v = get(k)
             setattr(self, k, v)
 
     cls.__init__ = __init__
@@ -396,58 +451,52 @@ def _replace_setattr(cls):
     origin = cls.__setattr__
 
     def __setattr__(self, key, value):
-        o = self.__validate_it__options__.get(key)
+        o = self.__validate_it__options__[key]
 
-        if o:
-            value = pack_value(value, o.get_type())
-            value = validate(self.__class__.__name__, o, key, value)
+        auto_pack = o.auto_pack
+
+        if callable(auto_pack):
+            auto_pack = auto_pack()
+
+        if auto_pack:
+            pack_function = o.packer
+            value = pack_function(value, o.get_type())
+
+        value = validate(self.__class__.__name__, o, key, value)
 
         origin(self, key, value)
 
     cls.__setattr__ = __setattr__
 
 
-def _map(cls, data, strip_unknown=False):
-    _new = {}
-    _expected = []
+def _map(cls, data):
+    enable_map = hasattr(cls, "__validate_it__enable_map__")
 
-    for key, value in cls.__validate_it__options__.items():
-        try:
-            _new[key] = data[key]
-            _expected.append(key)
-        except KeyError:
-            if value.alias:
-                try:
-                    _new[key] = data[value.alias]
-                    _expected.append(value.alias)
-                except KeyError:
-                    pass
+    def key_or_alias_value(key, alias):
+        if not enable_map:
+            to_check = [key]
+        else:
+            to_check = [key, alias]
 
-    if not strip_unknown:
-        _schema_keys = set(_expected)
-        _kwargs_keys = set(data.keys())
+        for k in to_check:
+            try:
+                item = data[k]
+                del data[k]
+                return item
+            except KeyError:
+                continue
+        else:
+            return None
 
-        _unexpected = _kwargs_keys - _schema_keys
-
-        if len(_unexpected):
-            raise ValidationError(f"{cls}.__new__() got an unexpected keyword arguments {_unexpected}")
-
-    return _new
+    return {
+        key: key_or_alias_value(key, value.alias)
+        for key, value in cls.__validate_it__options__.items()
+    }, data
 
 
-def _set_defaults(instance, data):
-    for key, options in instance.__validate_it__options__.items():
-        value = data.get(key)
-
-        if value is None and options.default is not None:
-            if callable(options.default):
-                value = options.default()
-            else:
-                value = options.default
-
-            data[key] = value
-
-    return data
+def _strip_unknown(cls, unknown, strip_unknown=False):
+    if not strip_unknown and len(unknown):
+        raise ValidationError(f"{cls}.__new__() got an unexpected keyword arguments {unknown.keys()}")
 
 
 def _set_options(cls):
@@ -471,6 +520,14 @@ def _set_options(cls):
         for key, _type in cls.__annotations__.items():
             if key not in cls.__validate_it__options__.keys():
                 cls.__validate_it__options__[key] = Options()
+
+    if any(
+        map(
+            lambda x: x.alias,
+            cls.__validate_it__options__.values()
+        )
+    ):
+        setattr(cls, "__validate_it__enable_map__", True)
 
 
 def _set_options_type(cls):
@@ -499,17 +556,9 @@ def _init_schema(cls, strip_unknown=False):
     _set_options_required(cls)
     _set_options_type_any(cls)
 
-    _replace_init(cls, strip_unknown)
-    _replace_setattr(cls)
-
-
-def representation(cls):
-    return {
-        "schema": {
-            k: _repr(o.get_type(), o)
-            for k, o in cls.__validate_it__options__.items()
-        }
-    }
+    if not hasattr(cls, '__validate_it__init_replaced__'):
+        _replace_init(cls, strip_unknown)
+        _replace_setattr(cls)
 
 
 def _expected_name(instance, name):
@@ -526,7 +575,7 @@ def to_dict(instance) -> dict:
     _data = {}
 
     for k, o in instance.__validate_it__options__.items():
-        if o.required:
+        if o.required and hasattr(instance, k):
             value = getattr(instance, k)
 
             _value = unpack_value(value, o.get_type())
@@ -586,5 +635,6 @@ __all__ = [
     "to_dict",
     "representation",
     "clone",
-    "choices_from_enum"
+    "choices_from_enum",
+    "pack_value"
 ]

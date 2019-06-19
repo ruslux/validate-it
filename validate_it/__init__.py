@@ -11,4 +11,5 @@ __all__ = [
     "to_dict",
     "clone",
     "representation",
+    "pack_value",
 ]

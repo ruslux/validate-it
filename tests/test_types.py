@@ -24,19 +24,180 @@ class Player:
     skills: Dict[str, Skill]
 
 
+@schema
+class Required:
+    _int: int
+    _float: float
+    _bool: bool
+    _str: str
+    _dict: dict
+    _list: list
+
+
+@schema
+class RequiredDefault:
+    _int: int = Options(default=1)
+    _float: float = Options(default=1.0)
+    _bool: bool = Options(default=True)
+    _str: str = Options(default="x")
+    _dict: dict = Options(default={"x": 1})
+    _list: List[int] = Options(default=[1, 2])
+
+
+@schema
+class RequiredDefaultCallable:
+    _int: int = Options(default=lambda: 1)
+    _float: float = Options(default=lambda: 1.0)
+    _bool: bool = Options(default=lambda: True)
+    _str: str = Options(default=lambda: "x")
+    _dict: dict = Options(default=lambda: {"x": 1})
+    _list: list = Options(default=lambda: [1, 2])
+
+
+@schema
+class NotRequired:
+    _optional: Optional[int]
+    _required: int
+
+
+@schema
+class NotRequiredDefault:
+    _optional: Optional[int] = 0
+    _optional_with_options: Optional[int] = Options(default=1)
+    _required: int = 0
+
+
+@schema
+class NotRequiredDefaultCallable:
+    _optional: Optional[int] = lambda: 0
+    _optional_with_options: Optional[int] = Options(default=lambda: 0)
+    _required: int = lambda: 0
+
+
+@schema
+class Empty:
+    _optional: Optional[int]
+    _required: int
+
+
+@schema
+class Allowed:
+    a: int = Options(allowed=[1, 2])
+
+
+@schema
+class AllowedCallable:
+    a: int = Options(allowed=lambda: [1, 2])
+
+
+@schema
+class Amount:
+    a: int = Options(min_value=10)
+    b: int = Options(max_value=20)
+
+
+@schema
+class Length:
+    a: str = Options(min_length=2)
+    b: str = Options(max_length=5)
+
+
+@schema
+class Convert:
+    a: str = Options(parser=str)
+
+
+@schema
+class NotSpecified:
+    a: list
+    b: dict
+
+
+@schema
+class TupleType:
+    a: tuple
+    b: Tuple[int, int, float]
+
+
+@schema
+class TypeVarType:
+    a: Optional[List]
+    b: Optional[List[int]]
+    c: Optional[Dict]
+    d: Optional[Dict[int, int]]
+
+
+@schema
+class DescriptorType:
+    a: Optional[List]
+    b: Optional[List[int]]
+    c: Optional[Dict]
+    d: Optional[Dict[int, int]]
+
+
+@schema
+class SerializerType:
+    a: float = Options(parser=float, serializer=int)
+
+
+@schema(strip_unknown=True)
+class Unexpected:
+    a: float = Options(parser=float, serializer=int)
+
+
+@schema
+class UnexpectedNotStrip:
+    a: float = Options(parser=float, serializer=int)
+
+
+@schema
+class UnionA:
+    a: int
+
+
+@schema
+class UnionB:
+    b: float
+
+
+@schema
+class UnionC:
+    c: Union[UnionA, UnionB]
+
+
+@schema
+class OptionalDictA:
+    i: int
+
+
+@schema
+class OptionalDictB:
+    s: str
+    nested_with_elements: Optional[Dict[int, OptionalDictA]]
+    nested_empty: Optional[Dict[int, OptionalDictA]]
+
+
+@schema
+class OptionalDictWithDefaultA:
+    i: int
+
+
+@schema
+class OptionalDictWithDefaultB:
+    nested: OptionalDictWithDefaultA
+
+
+@schema
+class OptionalDictWithDefaultC:
+    s: str
+    nested_with_elements: Optional[Dict[int, OptionalDictWithDefaultB]] = Options()
+    nested_empty: Optional[Dict[int, OptionalDictWithDefaultB]] = Options()
+
+
 class TypesTestCase(TestCase):
     def test_required(self):
-        @schema
-        class A:
-            _int: int
-            _float: float
-            _bool: bool
-            _str: str
-            _dict: dict
-            _list: list
-
         with self.assertRaises(ValidationError):
-            A()
+            Required()
 
         _data = {
             "_int": 1,
@@ -47,18 +208,9 @@ class TypesTestCase(TestCase):
             "_list": list()
         }
 
-        assert to_dict(A(**_data)) == _data
+        assert to_dict(Required(**_data)) == _data
 
     def test_required_default(self):
-        @schema
-        class A:
-            _int: int = Options(default=1)
-            _float: float = Options(default=1.0)
-            _bool: bool = Options(default=True)
-            _str: str = Options(default="x")
-            _dict: dict = Options(default={"x": 1})
-            _list: List[int] = Options(default=[1, 2])
-
         _data = {
             "_int": 1,
             "_float": 1.0,
@@ -68,18 +220,9 @@ class TypesTestCase(TestCase):
             "_list": [1, 2]
         }
 
-        self.assertEqual(to_dict(A()), _data)
+        self.assertEqual(to_dict(RequiredDefault()), _data)
 
     def test_required_default_callable(self):
-        @schema
-        class A:
-            _int: int = Options(default=lambda: 1)
-            _float: float = Options(default=lambda: 1.0)
-            _bool: bool = Options(default=lambda: True)
-            _str: str = Options(default=lambda: "x")
-            _dict: dict = Options(default=lambda: {"x": 1})
-            _list: list = Options(default=lambda: [1, 2])
-
         _data = {
             "_int": 1,
             "_float": 1.0,
@@ -89,68 +232,46 @@ class TypesTestCase(TestCase):
             "_list": [1, 2]
         }
 
-        self.assertEqual(to_dict(A()), _data)
+        self.assertEqual(to_dict(RequiredDefaultCallable()), _data)
 
     def test_not_required(self):
-        @schema
-        class A:
-            _optional: Optional[int]
-            _required: int
-
         _data = {
             "_required": 1
         }
 
-        self.assertEqual(to_dict(A(**_data)), _data)
+        self.assertEqual(to_dict(NotRequired(**_data)), _data)
 
         _data = {
             "_required": 1,
             "_optional": 1
         }
 
-        self.assertEqual(to_dict(A(**_data)), _data)
+        self.assertEqual(to_dict(NotRequired(**_data)), _data)
 
         _data = {}
 
         with self.assertRaises(ValidationError):
-            to_dict(A(**_data))
+            to_dict(NotRequired(**_data))
 
     def test_not_required_default(self):
-        @schema
-        class A:
-            _optional: Optional[int] = 0
-            _optional_with_options: Optional[int] = Options(default=1)
-            _required: int = 0
-
         _data = {
             "_required": 0,
             "_optional": 0,
             "_optional_with_options": 1
         }
 
-        self.assertEqual(to_dict(A(**_data)), _data)
+        self.assertEqual(to_dict(NotRequiredDefault(**_data)), _data)
 
     def test_not_required_default_callable(self):
-        @schema
-        class A:
-            _optional: Optional[int] = lambda: 0
-            _optional_with_options: Optional[int] = Options(default=lambda: 0)
-            _required: int = lambda: 0
-
         _data = {
             "_required": 0,
             "_optional": 0,
             "_optional_with_options": 1
         }
 
-        self.assertEqual(to_dict(A(**_data)), _data)
+        self.assertEqual(to_dict(NotRequiredDefaultCallable(**_data)), _data)
 
     def empty(self):
-        @schema
-        class A:
-            _optional: Optional[int]
-            _required: int
-
         _data = {
             "_required": 0,
             "_optional": None
@@ -160,62 +281,40 @@ class TypesTestCase(TestCase):
             "_required": 0
         }
 
-        self.assertEqual(to_dict(A(**_data)), _expected)
+        self.assertEqual(to_dict(Empty(**_data)), _expected)
 
     def test_allowed(self):
-        @schema
-        class A:
-            a: int = Options(allowed=[1, 2])
-
         with self.assertRaises(ValidationError):
-            A(a=3)
+            Allowed(a=3)
 
-        A(a=1)
+        Allowed(a=1)
 
     def test_allowed_callable(self):
-        @schema
-        class A:
-            a: int = Options(allowed=lambda: [1, 2])
-
         with self.assertRaises(ValidationError):
-            A(a=3)
+            AllowedCallable(a=3)
 
-        A(a=1)
+        AllowedCallable(a=1)
 
     def test_amount(self):
-        @schema
-        class A:
-            a: int = Options(min_value=10)
-            b: int = Options(max_value=20)
-
-        A(a=10, b=20)
+        Amount(a=10, b=20)
 
         with self.assertRaises(ValidationError):
-            to_dict(A(a=9, b=20))
+            to_dict(Amount(a=9, b=20))
 
         with self.assertRaises(ValidationError):
-            to_dict(A(a=10, b=21))
+            to_dict(Amount(a=10, b=21))
 
     def test_length(self):
-        @schema
-        class A:
-            a: str = Options(min_length=2)
-            b: str = Options(max_length=5)
-
-        A(a="12", b="12345")
+        Length(a="12", b="12345")
 
         with self.assertRaises(ValidationError):
-            A(a="1", b="12345")
+            Length(a="1", b="12345")
 
         with self.assertRaises(ValidationError):
-            A(a="12", b="123456")
+            Length(a="12", b="123456")
 
     def test_convert(self):
-        @schema
-        class A:
-            a: str = Options(parser=str)
-
-        self.assertEqual(to_dict(A(a=1)), {"a": "1"})
+        self.assertEqual(to_dict(Convert(a=1)), {"a": "1"})
 
     def test_nested_validation_and_members_access(self):
         _data = {
@@ -235,7 +334,16 @@ class TypesTestCase(TestCase):
             }
         }
 
-        p = Player(**_data)
+        p = Player(
+            name="John",
+            items=[
+                Item(title="Rose"),
+            ],
+            skills={
+                "fire": Skill(level=1, multiplier=2.0),
+                "ice": Skill(level=2, multiplier=3.0),
+            }
+        )
 
         self.assertEqual(to_dict(p), _data)
         self.assertEqual(p.name, "John")
@@ -243,19 +351,14 @@ class TypesTestCase(TestCase):
         self.assertEqual(p.skills["ice"].level, 2)
 
     def test_not_specified(self):
-        @schema
-        class A:
-            a: list
-            b: dict
+        with self.assertRaises(ValidationError):
+            NotSpecified(a={1: 1}, b={1: 1})
 
         with self.assertRaises(ValidationError):
-            A(a={1: 1}, b={1: 1})
-
-        with self.assertRaises(ValidationError):
-            A(a=[1, 1], b=[1, 1])
+            NotSpecified(a=[1, 1], b=[1, 1])
 
         self.assertEqual(
-            to_dict(A(a=[1, 1], b={1: 1})),
+            to_dict(NotSpecified(a=[1, 1], b={1: 1})),
             {
                 "a": [1, 1],
                 "b": {1: 1}
@@ -263,38 +366,19 @@ class TypesTestCase(TestCase):
         )
 
     def test_tuple(self):
-        @schema
-        class A:
-            a: tuple
-            b: Tuple[int, int, float]
+        with self.assertRaises(ValidationError):
+            TupleType(a=[1, 2, 3], b={1, 2, 3.0})
 
         with self.assertRaises(ValidationError):
-            A(a=[1, 2, 3], b={1, 2, 3.0})
-
-        with self.assertRaises(ValidationError):
-            A(a={1, 2, 3}, b={1, 2, 3})
+            TupleType(a={1, 2, 3}, b={1, 2, 3})
 
     def test_typevar(self):
-        @schema
-        class A:
-            a: Optional[List]
-            b: Optional[List[int]]
-            c: Optional[Dict]
-            d: Optional[Dict[int, int]]
-
         data = {"a": [], "b": [1], "c": {"a": "b"}, "d": {1: 2}}
 
-        assert to_dict(A(**data)) == data
+        assert to_dict(TypeVarType(**data)) == data
 
     def test_descriptor(self):
-        @schema
-        class A:
-            a: Optional[List]
-            b: Optional[List[int]]
-            c: Optional[Dict]
-            d: Optional[Dict[int, int]]
-
-        a = A(a=[], b=[1], c={"a": "b"}, d={1: 2})
+        a = DescriptorType(a=[], b=[1], c={"a": "b"}, d={1: 2})
 
         assert to_dict(a) == {"a": [], "b": [1], "c": {"a": "b"}, "d": {1: 2}}
 
@@ -306,74 +390,30 @@ class TypesTestCase(TestCase):
         assert a.a == [100]
 
     def test_serializer(self):
-        @schema
-        class A:
-            a: float = Options(parser=float, serializer=int)
-
-        a = A(a="1.1")
+        a = SerializerType(a="1.1")
         assert a.a == 1.1
         assert to_dict(a) == {"a": 1}
 
     def test_unexpected(self):
-        @schema(strip_unknown=True)
-        class A:
-            a: float = Options(parser=float, serializer=int)
-
-        a = A(a="1.1", b="1.1")
+        a = Unexpected(a="1.1", b="1.1")
         assert a.a == 1.1
         assert to_dict(a) == {"a": 1}
 
-        @schema
-        class A:
-            a: float = Options(parser=float, serializer=int)
-
         with self.assertRaises(ValidationError):
-            A(a="1.1", b="1.1")
-
-        @schema
-        class A:
-            a: float = Options(parser=float, serializer=int)
-
-            class Meta:
-                some_field = 3
-
-        with self.assertRaises(ValidationError):
-            A(a="1.1", b="1.1")
+            UnexpectedNotStrip(a="1.1", b="1.1")
 
     def test_union(self):
-        @schema
-        class A:
-            a: int
-
-        @schema
-        class B:
-            b: float
-
-        @schema
-        class C:
-            c: Union[A, B]
-
-        a = {'a': 1}
-        b = {'b': 0.1}
-
-        C(c=a)
-        C(c=b)
+        UnionC(c=UnionA(a=1))
+        UnionC(c=UnionB(b=0.1))
 
         with self.assertRaises(ValidationError):
-            C(c={'a': 0.1})
+            UnionC(c=UnionA(a=0.1))
 
     def test_optional_dict(self):
-        @schema
-        class A:
-            i: int
-
-        @schema
-        class B:
-            s: str
-            nested_with_elements: Optional[Dict[int, A]]
-            nested_empty: Optional[Dict[int, A]]
-
-        b = B(s="s", nested_with_elements={1: {"i": 2}})
+        b = OptionalDictB(
+            s="s",
+            nested_with_elements={1: OptionalDictA(i=2)}
+        )
 
         self.assertEqual(
             to_dict(b),
@@ -381,21 +421,12 @@ class TypesTestCase(TestCase):
         )
 
     def test_optional_dict_with_default(self):
-        @schema
-        class A:
-            i: int
-
-        @schema
-        class B:
-            nested: A
-
-        @schema
-        class C:
-            s: str
-            nested_with_elements: Optional[Dict[int, B]] = Options()
-            nested_empty: Optional[Dict[int, B]] = Options()
-
-        c = C(s="s", nested_with_elements={1: {"nested": {"i": 2}}})
+        c = OptionalDictWithDefaultC(
+            s="s",
+            nested_with_elements={
+                1: OptionalDictWithDefaultB(nested=OptionalDictWithDefaultA(i=2))
+            }
+        )
 
         self.assertEqual(c.s, "s")
 
@@ -404,5 +435,5 @@ class TypesTestCase(TestCase):
             {"s": "s", "nested_with_elements": {1: {"nested": {"i": 2}}}}
         )
 
-        c.nested_with_elements[1].nested = {"i": 10}
+        c.nested_with_elements[1].nested = OptionalDictWithDefaultA(i=10)
         to_dict(c)

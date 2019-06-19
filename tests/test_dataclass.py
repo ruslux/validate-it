@@ -4,6 +4,95 @@ from unittest import TestCase
 
 from validate_it import Options, schema, to_dict, ValidationError
 
+try:
+    from dataclasses import dataclass
+
+    @schema
+    @dataclass
+    class SkillA:
+        level: int
+        multiplier: float
+
+
+    @schema
+    @dataclass
+    class ItemA:
+        title: str
+
+
+    @schema
+    @dataclass
+    class PlayerA:
+        name: str
+
+        items: List[ItemA]
+
+        skills: Dict[str, SkillA]
+
+
+    @schema
+    @dataclass
+    class SkillB:
+        level: int
+        multiplier: float
+
+
+    @schema
+    @dataclass
+    class ItemB:
+        title: str
+
+
+    @schema
+    @dataclass
+    class PlayerB:
+        name: str = Options(default="")
+
+        items: List[ItemB] = Options(default=list)
+
+        skills: Dict[str, SkillB] = Options(default=dict)
+
+
+    @schema
+    class A:
+        a: str = Options(default="a")
+        b: str = Options(default="b")
+
+
+    @schema
+    @dataclass
+    class B:
+        a: int = Options(alias="_a")
+        b: int = Options(alias="_b")
+
+
+    @schema
+    @dataclass
+    class Nested:
+        nested: int
+
+
+    @schema
+    @dataclass
+    class NestedA:
+        a: int
+        nested: Nested
+
+
+    @schema
+    @dataclass
+    class NestedB:
+        b: float
+
+
+    @schema
+    @dataclass
+    class NestedC:
+        c: Union[NestedA, NestedB]
+
+except ImportError:
+    pass
+
 
 class DataclassTestCase(TestCase):
     def test_dataclass(self):
@@ -12,26 +101,6 @@ class DataclassTestCase(TestCase):
         except ImportError:
             return
 
-        @schema
-        @dataclass
-        class Skill:
-            level: int
-            multiplier: float
-
-        @schema
-        @dataclass
-        class Item:
-            title: str
-
-        @schema
-        @dataclass
-        class Player:
-            name: str
-
-            items: List[Item]
-
-            skills: Dict[str, Skill]
-
         _data = {
             "name": "John",
             "items": [
@@ -49,14 +118,22 @@ class DataclassTestCase(TestCase):
             }
         }
 
-        p = Player(**_data)
+        p = PlayerA(
+            name="John",
+            items=[
+                ItemA(title="Rose"),
+            ],
+            skills={
+                "fire": SkillA(level=1, multiplier=2.0),
+                "ice": SkillA(level=2, multiplier=3.0),
+            }
+        )
 
         self.assertEqual(to_dict(p), _data)
         self.assertEqual(p.name, "John")
         self.assertEqual(p.items[0].title, "Rose")
         self.assertEqual(p.skills["ice"].level, 2)
 
-        p = Player(**_data)
         self.assertEqual(to_dict(p), _data)
 
     def test_dataclass_with_options(self):
@@ -65,34 +142,19 @@ class DataclassTestCase(TestCase):
         except ImportError:
             return
 
-        @schema
-        @dataclass
-        class Skill:
-            level: int
-            multiplier: float
-
-        @schema
-        @dataclass
-        class Item:
-            title: str
-
-        @schema
-        @dataclass
-        class Player:
-            name: str
-
-            items: List[Item] = Options(default=list)
-
-            skills: Dict[str, Skill] = Options(default=dict)
-
         _data = {
             "name": "John",
             "items": None,
             "skills": None
         }
 
-        to_dict(Player(**_data))
-        to_dict(Player(**_data))
+        PlayerB()
+        PlayerB(
+            name="John"
+        )
+        PlayerB(
+            name="John"
+        )
 
         _data = {
             "name": "John",
@@ -111,14 +173,22 @@ class DataclassTestCase(TestCase):
             }
         }
 
-        p = Player(**_data)
+        p = PlayerB(
+            name="John",
+            items=[
+                ItemB(title="Rose"),
+            ],
+            skills={
+                "fire": SkillB(level=1, multiplier=2.0),
+                "ice": SkillB(level=2, multiplier=3.0),
+            }
+        )
 
         self.assertEqual(to_dict(p), _data)
         self.assertEqual(p.name, "John")
         self.assertEqual(p.items[0].title, "Rose")
         self.assertEqual(p.skills["ice"].level, 2)
 
-        p = Player(**_data)
         self.assertEqual(to_dict(p), _data)
 
     def test_missing_arguments(self):
@@ -126,19 +196,6 @@ class DataclassTestCase(TestCase):
             from dataclasses import dataclass
         except ImportError:
             return
-
-        @schema
-        class A:
-            a: str = Options(default="a")
-            b: str = Options(default="b")
-
-        A(a="c")
-
-        @schema
-        @dataclass
-        class A:
-            a: str = Options(default="a")
-            b: str = Options(default="b")
 
         A(a="c")
 
@@ -148,13 +205,7 @@ class DataclassTestCase(TestCase):
         except ImportError:
             return
 
-        @schema
-        @dataclass
-        class A:
-            a: int = Options(alias="_a")
-            b: int = Options(alias="_b")
-
-        A(_a=1, _b=2)
+        B(_a=1, _b=2)
 
     def test_union(self):
         try:
@@ -162,77 +213,23 @@ class DataclassTestCase(TestCase):
         except ImportError:
             return
 
-        @schema
-        @dataclass
-        class Nested:
-            nested: int
-
-        @schema
-        @dataclass
-        class A:
-            a: int
-            nested: Nested
-
-        @schema
-        @dataclass
-        class B:
-            b: float
-
-        @schema
-        @dataclass
-        class C:
-            c: Union[A, B]
-
-        a = {'a': 1, 'nested': {'nested': 2}}
-        b = {'b': 0.1}
-
-        C(c=a)
-        C(c=b)
+        NestedC(
+            c=NestedA(
+                a=1,
+                nested=Nested(
+                    nested=2
+                )
+            )
+        )
+        NestedC(
+            c=NestedB(
+                b=0.1
+            )
+        )
 
         with self.assertRaises(ValidationError):
-            C(c={'a': 0.1})
-
-    # # first: 0.9 sec
-    # # second: 1.1 sec
-    # # dual core i5 7 gen
-    # def test_performance(self):
-    #     try:
-    #         from dataclasses import dataclass
-    #     except ImportError:
-    #         return
-    #
-    #     @schema
-    #     @dataclass
-    #     class A:
-    #         a: int
-    #
-    #     @schema
-    #     @dataclass
-    #     class B:
-    #         b: float
-    #
-    #     @schema
-    #     @dataclass
-    #     class C:
-    #         c: Union[A, B]
-    #
-    #     a = {'a': 1}
-    #     C(c=a)
-    #
-    #     start = time()
-    #     for i in range(100000):
-    #         C(c=a)
-    #
-    #     end = time()
-    #     print(end - start)
-    #
-    #     start = time()
-    #     a = {'b': 1.0}
-    #
-    #     for i in range(100000):
-    #         C(c=a)
-    #
-    #     end = time()
-    #     print(end - start)
-    #
-    #     raise Exception
+            NestedC(
+                c=NestedA(
+                    a=0.1
+                )
+            )
