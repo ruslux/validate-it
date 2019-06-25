@@ -2,7 +2,7 @@ from os import path
 
 from setuptools import setup, find_packages
 
-version = "0.9.1"
+version = "0.9.2"
 
 here = path.abspath(path.dirname(__file__))
 
@@ -11,7 +11,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name="validate-it",
-    packages=find_packages(),
+    packages=find_packages(exclude=('benchmarks', 'tests')),
     version=version,
     description="Schema validator built on top of the typing module",
     long_description=long_description,
