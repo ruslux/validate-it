@@ -5,7 +5,7 @@ from accordion import compress, expand
 from validate_it import *
 
 
-class TestMapping(TestCase):
+class MappingTestCase(TestCase):
     def test_simple_mapping(self):
         @schema(strip_unknown=True)
         class CustomMapper:

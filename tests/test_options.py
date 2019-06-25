@@ -14,7 +14,7 @@ class Example:
     f: int = Options(rename="g")
 
 
-class TestAnnotations(TestCase):
+class OptionsTestCase(TestCase):
     def test_annotations(self):
         assert sorted(list(Example.__annotations__.keys())) == ["b", "c", "d", "e", "f"]
 

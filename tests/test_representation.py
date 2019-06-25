@@ -3,7 +3,7 @@ from unittest import TestCase
 from validate_it import Options, schema, representation
 
 
-class TestClone(TestCase):
+class TestRepresentation(TestCase):
     def test_representation(self):
         @schema
         class R:

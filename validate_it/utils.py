@@ -128,6 +128,9 @@ def representation(cls):
 
 def unpack_value(value, box_type):
     """ Cast nested values types: List[NestedClass] -> List[Dict]"""
+    if value is None:
+        return value
+
     if box_type is dict and isinstance(value, dict):
         return value
 
@@ -174,6 +177,12 @@ def pack_value(value, box_type):
     """ Cast nested values types: List[Dict] -> List[NestedClass]"""
     if value is None:
         return None
+
+    try:
+        if isinstance(value, box_type):
+            return value
+    except TypeError:
+        pass
 
     if box_type is dict and isinstance(value, dict):
         return value

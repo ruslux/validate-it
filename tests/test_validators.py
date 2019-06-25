@@ -20,7 +20,7 @@ class TypeWithValidator:
     email: str = Options(validators=[is_email])
 
 
-class TestValidators(TestCase):
+class ValidatorsTestCase(TestCase):
     def test_validators(self):
         with self.assertRaises(IsNotEmailError):
             TypeWithValidator(email="notEmail")

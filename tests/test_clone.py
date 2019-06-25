@@ -23,7 +23,7 @@ Fourth = clone(First, strip_unknown=True, add=[("a", str, Options(parser=str))])
 Fifth = clone(First, strip_unknown=True, add=[("_id", int, Options(default=1))])
 
 
-class TestClone(TestCase):
+class CloneTestCase(TestCase):
     def test_clone(self):
         data = {"a": 1, "b": 2}
 

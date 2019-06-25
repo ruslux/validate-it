@@ -3,7 +3,7 @@ from unittest import TestCase
 from validate_it import Options, schema, to_dict
 
 
-class TestInheritance(TestCase):
+class InheritanceTestCase(TestCase):
     def test_inheritance(self):
         @schema
         class A:
