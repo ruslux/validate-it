@@ -224,10 +224,6 @@ def is_compatible(value, box_type):
     if isinstance(box_type, TypeVar):
         return True
 
-    if hasattr(box_type, '__validate_it__options__') and \
-            hasattr(value, '__validate_it__options__'):
-        return True
-
     if is_generic_alias(box_type, (Union,)) and any(
         map(
             lambda arg: is_compatible(value, arg),
@@ -435,8 +431,8 @@ def _walk_validators(name, o: Options, k, v):
 
 def _replace_init(cls, strip_unknown=False):
     def __init__(self, **kwargs) -> None:
-        mapped, unknown = _map(cls, kwargs)
-        _strip_unknown(cls, unknown, strip_unknown=strip_unknown)
+        mapped, unknown_fields = _map(cls, kwargs)
+        _strip_unknown(cls, unknown_fields, strip_unknown=strip_unknown)
 
         get = mapped.get
 
