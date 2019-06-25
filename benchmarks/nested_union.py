@@ -2,6 +2,7 @@
 from timeit import timeit
 from typing import Union
 
+from benchmarks.config import NUMBER
 from validate_it import schema, Options, pack_value
 
 
@@ -51,8 +52,8 @@ try:
         a = {'a': 1}
         G(c=a)
 
-    print("nested union dataclass         ", timeit("test()", globals={"test": test_dataclass}, number=100000))
-    print("nested union dataclass + schema", timeit("test()", globals={"test": test_dataclass_schema}, number=100000))
+    print("nested union dataclass         ", timeit("test()", globals={"test": test_dataclass}, number=NUMBER))
+    print("nested union dataclass + schema", timeit("test()", globals={"test": test_dataclass_schema}, number=NUMBER))
 
 except ImportError:
     pass
@@ -78,4 +79,4 @@ def test_schema():
     J(c=a)
 
 
-print("nested union schema            ", timeit("test()", globals={"test": test_schema}, number=100000))
+print("nested union schema            ", timeit("test()", globals={"test": test_schema}, number=NUMBER))

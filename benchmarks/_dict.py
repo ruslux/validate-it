@@ -2,6 +2,7 @@
 from timeit import timeit
 from typing import List, Dict
 
+from benchmarks.config import NUMBER
 from validate_it import schema
 
 try:
@@ -24,8 +25,8 @@ try:
     def test_dataclass_schema():
         B(a={1: 1, 2: 2})
 
-    print("dict dataclass         ", timeit("test()", globals={"test": test_dataclass}, number=100000))
-    print("dict dataclass + schema", timeit("test()", globals={"test": test_dataclass_schema}, number=100000))
+    print("dict dataclass         ", timeit("test()", globals={"test": test_dataclass}, number=NUMBER))
+    print("dict dataclass + schema", timeit("test()", globals={"test": test_dataclass_schema}, number=NUMBER))
 except ImportError:
     pass
 
@@ -39,4 +40,4 @@ def test_schema():
     C(a={1: 1, 2: 2})
 
 
-print("dict schema            ", timeit("test()", globals={"test": test_schema}, number=100000))
+print("dict schema            ", timeit("test()", globals={"test": test_schema}, number=NUMBER))

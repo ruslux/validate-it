@@ -2,6 +2,7 @@
 from timeit import timeit
 from typing import List
 
+from benchmarks.config import NUMBER
 from validate_it import schema
 
 try:
@@ -26,8 +27,8 @@ try:
         B(a=[1] * 10)
 
 
-    print("list dataclass         ", timeit("test()", globals={"test": test_dataclass}, number=100000))
-    print("list dataclass + schema", timeit("test()", globals={"test": test_dataclass_schema}, number=100000))
+    print("list dataclass         ", timeit("test()", globals={"test": test_dataclass}, number=NUMBER))
+    print("list dataclass + schema", timeit("test()", globals={"test": test_dataclass_schema}, number=NUMBER))
 
 except ImportError:
     pass
@@ -42,4 +43,4 @@ def test_schema():
     C(a=[1] * 10)
 
 
-print("list schema            ", timeit("test()", globals={"test": test_schema}, number=100000))
+print("list schema            ", timeit("test()", globals={"test": test_schema}, number=NUMBER))
