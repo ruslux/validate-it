@@ -272,7 +272,6 @@ def getattr_or_default(obj, k, default=None):
         return default
 
 
-
 def validate(name, o: Options, k, v):
     v = _set_default(o, k, v)
     v = _convert(o, k, v)
@@ -432,6 +431,9 @@ def _replace_init(cls, strip_unknown=False):
         for k, o in self.__validate_it__options__.items():
             v = get(k)
             setattr(self, k, v)
+
+        if hasattr(cls, '__validate_it__post_init__'):
+            self.__validate_it__post_init__()
 
     cls.__init__ = __init__
 
