@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.org/ruslux/validate-it.svg?branch=master)](https://travis-ci.org/ruslux/validate-it) 
 [![Coverage Status](https://coveralls.io/repos/github/ruslux/validate-it/badge.svg?branch=master)](https://coveralls.io/github/ruslux/validate-it)
 [![PyPI version](https://badge.fury.io/py/validate-it.svg)](https://badge.fury.io/py/validate-it)
+[![Downloads](https://img.shields.io/pypi/dm/validate-it.svg)](https://pypi.python.org/pypi/validate-it)
 
 - [About](#about)
 - [Installation](#installation)
