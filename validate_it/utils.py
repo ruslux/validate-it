@@ -241,6 +241,17 @@ def is_compatible(value, box_type):
     ):
         return True
 
+    if is_generic_alias(box_type, (tuple, Tuple)) and isinstance(value, tuple):
+        if len(value) != len(box_type.__args__):
+            return False
+
+        return all(
+            map(
+                lambda x: is_compatible(x[0], x[1]),
+                zip(value, box_type.__args__)
+            )
+        )
+
     if is_generic_alias(box_type, (list, List)) and isinstance(value, list):
         subtype = box_type.__args__[0]
 

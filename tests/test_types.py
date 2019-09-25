@@ -366,6 +366,8 @@ class TypesTestCase(TestCase):
         )
 
     def test_tuple(self):
+        TupleType(a=(1, 2), b=(1, 2, 3.0))
+
         with self.assertRaises(ValidationError):
             TupleType(a=[1, 2, 3], b={1, 2, 3.0})
 
