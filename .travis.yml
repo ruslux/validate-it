@@ -2,17 +2,12 @@ language: python
 dist: xenial
 sudo: yes
 python:
-  - "3.6"
-  - "3.7"
-  - "pypy3.6-7.0.0"
+  - "3.8"
 addons:
 install:
-  - pip install --upgrade setuptools pytest pytest-cov coveralls
-  - pip install -r dev-requirements.txt
-  - pip install -r requirements.txt
-before_script:
-  - ./show_versions.sh
+  - pip install poetry
+  - poetry config virtualenvs.create false && poetry install
 script:
-  - ./run_tests.sh
+  - tox
 after_success:
   - coveralls
