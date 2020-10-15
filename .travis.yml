@@ -6,13 +6,18 @@ python:
   - "3.7"
   - "3.6"
   - "pypy3.6-7.0.0"
-addons:
+jobs:
+  include:
+    - python: '3.6'
+      env: COMMAND="python3.6 --version && tox -e 36"
+    - python: '3.7'
+      env: COMMAND="python3.7 --version && tox -e 37"
+    - python: '3.8'
+      env: COMMAND="python3.8 --version && tox -e 38"
 install:
   - pip install poetry
   - poetry config virtualenvs.create false && poetry install
 script:
-  - python3.6 --version && tox -e 36
-  - python3.7 --version && tox -e 37
-  - python3.8 --version && tox -e 38
+  - $COMMAND
 after_success:
   - coveralls
