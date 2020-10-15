@@ -279,7 +279,7 @@ def getattr_or_default(obj, key, default=None):
         return default
 
 
-def validate(name, options: Options, key, value):
+def validate(name, options: Options, key, value, root):
     value = _set_default(options, key, value)
     value = _convert(options, key, value)
     value = _check_types(name, options, key, value)
@@ -290,7 +290,7 @@ def validate(name, options: Options, key, value):
     value = _validate_min_length(name, options, key, value)
     value = _validate_max_length(name, options, key, value)
     value = _validate_size(name, options, key, value)
-    value = _walk_validators(name, options, key, value)
+    value = _walk_validators(name, options, key, value, root)
 
     return value
 
@@ -419,7 +419,7 @@ def _validate_size(name, options: Options, key, value):
     return value
 
 
-def _walk_validators(name, options: Options, key, value):
+def _walk_validators(name, options: Options, key, value, root):
     if options.validators is None:
         return value
 
@@ -427,20 +427,39 @@ def _walk_validators(name, options: Options, key, value):
 
     if validators:
         for validator in validators:
-            value = validator(name, key, value)
+            value = validator(name, key, value, root)
 
     return value
 
 
 def _replace_init(cls, strip_unknown=False):
     def __init__(self, **kwargs) -> None:
+        """
+        Replaces original __init__ and checks keys compatibility.
+        If schema key or schema key alias does not match with data key raises ValidationError.
+
+        Example:
+
+        @schema
+        class User:
+            username: str = Options(alias='email')
+
+        Valid:
+
+        User({'name': 'John'})
+        User({'email': 'john@test.com'})
+
+        Error:
+
+        User({'lastname': 'Smith'})
+        """
         mapped, unknown_fields = _map(cls, kwargs)
         _strip_unknown(cls, unknown_fields, strip_unknown=strip_unknown)
 
-        get = mapped.get
+        self.__validate_it__origin_data__ = mapped
 
         for key, options in self.__validate_it__options__.items():
-            value = get(key)
+            value = mapped.get(key)
             setattr(self, key, value)
 
         if hasattr(cls, '__validate_it__post_init__'):
@@ -453,6 +472,27 @@ def _replace_setattr(cls):
     origin = cls.__setattr__
 
     def __setattr__(self, key, value):
+        """
+        Replaces original __setattr__ and checks all selected `Options`.
+
+        Example:
+
+        @schema
+        class User:
+            name: str = Options(min_length=5)
+
+        Valid:
+
+        User(name='Johan')
+
+        Invalid:
+
+        User(name='John')
+        """
+        if key in cls.__validate_it__ignore_fields__:
+            origin(self, key, value)
+            return
+
         options = self.__validate_it__options__[key]
 
         auto_pack = options.auto_pack
@@ -464,7 +504,7 @@ def _replace_setattr(cls):
             pack_function = options.packer
             value = pack_function(value, options.get_type())
 
-        value = validate(self.__class__.__name__, options, key, value)
+        value = validate(self.__class__.__name__, options, key, value, self.__validate_it__origin_data__)
 
         origin(self, key, value)
 
@@ -472,10 +512,10 @@ def _replace_setattr(cls):
 
 
 def _map(cls, data):
-    enable_map = hasattr(cls, "__validate_it__enable_map__")
+    enable_alias_mapping = hasattr(cls, "__validate_it__enable_alias_mapping__")
 
     def key_or_alias_value(key, alias):
-        if not enable_map:
+        if not enable_alias_mapping:
             to_check = [key]
         else:
             to_check = [key, alias]
@@ -502,9 +542,6 @@ def _strip_unknown(cls, unknown, strip_unknown=False):
 
 
 def _set_options(cls):
-    if not hasattr(cls, "__validate_it__options__"):
-        cls.__validate_it__options__ = {}
-
     _keys = set()
 
     attributes = getmembers(
@@ -529,7 +566,7 @@ def _set_options(cls):
             cls.__validate_it__options__.values()
         )
     ):
-        setattr(cls, "__validate_it__enable_map__", True)
+        setattr(cls, "__validate_it__enable_alias_mapping__", True)
 
 
 def _set_options_type(cls):
@@ -552,7 +589,20 @@ def _set_options_type_any(cls):
             options.set_type(Any)
 
 
+def _setup_validate_it(cls):
+    if not hasattr(cls, "__validate_it__options__"):
+        cls.__validate_it__options__ = {}
+
+        cls.__validate_it__ignore_fields__ = [
+            '__validate_it__origin_data__'
+        ]
+
+        cls.__validate_it__origin_data__ = None
+
+
 def _init_schema(cls, strip_unknown=False):
+    _setup_validate_it(cls)
+
     _set_options(cls)
     _set_options_type(cls)
     _set_options_required(cls)
