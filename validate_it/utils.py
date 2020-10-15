@@ -143,7 +143,7 @@ def unpack_value(value, box_type):
                 continue
 
     if is_generic_alias(box_type, (list, List)) and isinstance(value, list):
-        if box_type.__args__:
+        if "__args__" in box_type.__dict__ and box_type.__dict__["__args__"]:
             subtype = box_type.__args__[0]
 
             return [
@@ -154,7 +154,7 @@ def unpack_value(value, box_type):
             return value
 
     if is_generic_alias(box_type, (dict, Dict)) and isinstance(value, dict):
-        if box_type.__args__:
+        if "__args__" in box_type.__dict__ and box_type.__dict__["__args__"]:
             subtype_0 = box_type.__args__[0]
             subtype_1 = box_type.__args__[1]
 
