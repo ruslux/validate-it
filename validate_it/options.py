@@ -1,16 +1,5 @@
 from datetime import datetime
-from typing import Callable, Iterable, List, Optional, Union
-
-AnyType = Union[
-    int,
-    float,
-    bool,
-    dict,
-    list,
-    str,
-    tuple
-]
-
+from typing import Any, Callable, Iterable, List, Optional, Union
 
 Amount = Union[
     int,
@@ -21,12 +10,12 @@ Amount = Union[
 
 class Options:
     required: bool
-    default: Optional[Union[AnyType, Callable]]
+    default: Optional[Union[Any, Callable]]
 
     auto_pack: Optional[Union[bool, Callable]]
     packer: Optional[Callable]
 
-    allowed: Optional[Union[Iterable[AnyType], Callable]]
+    allowed: Optional[Union[Iterable[Any], Callable]]
 
     min_value: Optional[Union[Amount, Callable]]
     max_value: Optional[Union[Amount, Callable]]
@@ -46,10 +35,10 @@ class Options:
     def __init__(
         self,
         required: bool = True,
-        default: Optional[Union[AnyType, Callable]] = None,
+        default: Optional[Union[Any, Callable]] = None,
         auto_pack: Optional[Union[bool, Callable]] = None,
         packer: Optional[Callable] = None,
-        allowed: Optional[Union[Iterable[AnyType], Callable]] = None,
+        allowed: Optional[Union[Iterable[Any], Callable]] = None,
         min_value: Optional[Union[Amount, Callable]] = None,
         max_value: Optional[Union[Amount, Callable]] = None,
         size: Optional[Union[int, Callable]] = None,

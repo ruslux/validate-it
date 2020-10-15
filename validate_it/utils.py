@@ -20,88 +20,86 @@ def is_generic_alias(box_type, classes):
         return False
 
 
-def _repr(t, o):
-    from validate_it import Options
-
-    _d = {
-        "required": o.required,
+def _repr(_type, options):
+    _dict = {
+        "required": options.required,
     }
 
-    if o.default is not None:
-        _d["default"] = o.default if not callable(o.default) else "dynamic"
+    if options.default is not None:
+        _dict["default"] = options.default if not callable(options.default) else "dynamic"
 
-    if o.min_length is not None:
-        _d["min length"] = o.min_length if not callable(o.min_length) else "dynamic"
+    if options.min_length is not None:
+        _dict["min length"] = options.min_length if not callable(options.min_length) else "dynamic"
 
-    if o.max_length is not None:
-        _d["max length"] = o.max_length if not callable(o.max_length) else "dynamic"
+    if options.max_length is not None:
+        _dict["max length"] = options.max_length if not callable(options.max_length) else "dynamic"
 
-    if o.min_value is not None:
-        _d["min value"] = o.min_value if not callable(o.min_value) else "dynamic"
+    if options.min_value is not None:
+        _dict["min value"] = options.min_value if not callable(options.min_value) else "dynamic"
 
-    if o.max_value is not None:
-        _d["max value"] = o.max_value if not callable(o.max_value) else "dynamic"
+    if options.max_value is not None:
+        _dict["max value"] = options.max_value if not callable(options.max_value) else "dynamic"
 
-    if o.size is not None:
-        _d["size"] = o.size if not callable(o.size) else "dynamic"
+    if options.size is not None:
+        _dict["size"] = options.size if not callable(options.size) else "dynamic"
 
-    if o.allowed is not None:
-        _d["allowed values"] = o.allowed if not callable(o.allowed) else "dynamic"
+    if options.allowed is not None:
+        _dict["allowed values"] = options.allowed if not callable(options.allowed) else "dynamic"
 
-    if o.alias is not None:
-        _d["search alias"] = o.alias if not callable(o.alias) else "dynamic"
+    if options.alias is not None:
+        _dict["search alias"] = options.alias if not callable(options.alias) else "dynamic"
 
-    if o.rename is not None:
-        _d["rename to"] = o.rename if not callable(o.rename) else "dynamic"
+    if options.rename is not None:
+        _dict["rename to"] = options.rename if not callable(options.rename) else "dynamic"
 
-    if is_generic_alias(t, (Union,)):
-        _d.update(
+    if is_generic_alias(_type, (Union,)):
+        _dict.update(
             {
                 "type": "union",
                 "nested_types": [
                     _repr(arg, Options())
-                    for arg in t.__args__
+                    for arg in _type.__args__
                 ]
             }
         )
 
-    elif is_generic_alias(t, (list, List)):
-        _d.update(
+    elif is_generic_alias(_type, (list, List)):
+        _dict.update(
             {
                 "type": "list",
                 "nested_type": [
-                    _repr(t.__args__[0], Options())
+                    _repr(_type.__args__[0], Options())
                 ]
             }
         )
 
-    elif is_generic_alias(t, (dict, Dict)):
-        _d.update(
+    elif is_generic_alias(_type, (dict, Dict)):
+        _dict.update(
             {
                 "type": "dict",
-                "key_type": _repr(t.__args__[0], Options()),
-                "value_type": _repr(t.__args__[1], Options())
+                "key_type": _repr(_type.__args__[0], Options()),
+                "value_type": _repr(_type.__args__[1], Options())
             }
         )
 
-    elif hasattr(t, '__validate_it__options__'):
-        _d.update(
+    elif hasattr(_type, '__validate_it__options__'):
+        _dict.update(
             {
                 "type": "validate_it.schema",
-                "schema": representation(t)
+                "schema": representation(_type)
             }
         )
 
-    elif isinstance(t, list):
-        _d.update(
+    elif isinstance(_type, list):
+        _dict.update(
             {
                 "type": "dict",
                 "nested_type": "any"
             }
         )
 
-    elif isinstance(t, dict):
-        _d.update(
+    elif isinstance(_type, dict):
+        _dict.update(
             {
                 "type": "dict",
                 "key_type": "any",
@@ -110,16 +108,16 @@ def _repr(t, o):
         )
 
     else:
-        _d["type"] = t.__name__
+        _dict["type"] = _type.__name__
 
-    return _d
+    return _dict
 
 
 def representation(cls):
     return {
         "schema": {
-            k: _repr(o.get_type(), o)
-            for k, o in cls.__validate_it__options__.items()
+            key: _repr(options.get_type(), options)
+            for key, options in cls.__validate_it__options__.items()
         }
     }
 
@@ -159,8 +157,8 @@ def unpack_value(value, box_type):
             subtype_1 = box_type.__args__[1]
 
             return {
-                unpack_value(k, subtype_0): unpack_value(v, subtype_1)
-                for k, v in value.items()
+                unpack_value(key, subtype_0): unpack_value(value, subtype_1)
+                for key, value in value.items()
             }
         else:
             return value
@@ -274,160 +272,164 @@ def is_compatible(value, box_type):
     return False
 
 
-def getattr_or_default(obj, k, default=None):
-    if hasattr(obj, k):
-        return getattr(obj, k)
+def getattr_or_default(obj, key, default=None):
+    if hasattr(obj, key):
+        return getattr(obj, key)
     else:
         return default
 
 
-def validate(name, o: Options, k, v):
-    v = _set_default(o, k, v)
-    v = _convert(o, k, v)
-    v = _check_types(name, o, k, v)
+def validate(name, options: Options, key, value):
+    value = _set_default(options, key, value)
+    value = _convert(options, key, value)
+    value = _check_types(name, options, key, value)
 
-    v = _validate_allowed(name, o, k, v)
-    v = _validate_min_value(name, o, k, v)
-    v = _validate_max_value(name, o, k, v)
-    v = _validate_min_length(name, o, k, v)
-    v = _validate_max_length(name, o, k, v)
-    v = _validate_size(name, o, k, v)
-    v = _walk_validators(name, o, k, v)
+    value = _validate_allowed(name, options, key, value)
+    value = _validate_min_value(name, options, key, value)
+    value = _validate_max_value(name, options, key, value)
+    value = _validate_min_length(name, options, key, value)
+    value = _validate_max_length(name, options, key, value)
+    value = _validate_size(name, options, key, value)
+    value = _walk_validators(name, options, key, value)
 
-    return v
-
-
-def _set_default(o: Options, k, v):
-    if o.default is None:
-        return v
-
-    if v is None:
-        v = o.default
-
-        if v is not None:
-            if callable(v):
-                v = v()
-    return v
+    return value
 
 
-def _convert(o: Options, k, v):
-    if o.parser and not is_compatible(v, o.get_type()):
-        converted = o.parser(v)
+def _set_default(options: Options, key, value):
+    if options.default is None:
+        return value
+
+    if value is None:
+        value = options.default
+
+        if value is not None:
+            if callable(value):
+                value = value()
+    return value
+
+
+def _convert(options: Options, key, value):
+    if options.parser and not is_compatible(value, options.get_type()):
+        converted = options.parser(value)
 
         if converted is not None:
-            v = converted
+            value = converted
 
-    return v
-
-
-def _check_types(name, o: Options, k, v):
-    if not is_compatible(v, o.get_type()):
-        raise ValidationError(f"Field `{name}#{k}`: {o.get_type()} is not compatible with value `{v}`:{type(v)}")
-
-    return v
+    return value
 
 
-def _validate_allowed(name, o: Options, k, v):
-    if o.allowed is None:
-        return v
+def _check_types(name, options: Options, key, value):
+    if not is_compatible(value, options.get_type()):
+        raise ValidationError(
+            f"Field `{name}#{key}`: {options.get_type()} is not compatible with value `{value}`:{type(value)}"
+        )
 
-    allowed = o.allowed
-
-    if callable(o.allowed):
-        allowed = o.allowed()
-
-    if allowed and v not in allowed:
-        raise ValidationError(f"Field `{name}#{k}`: value `{v}` is not allowed. Allowed vs: `{allowed}`")
-
-    return v
+    return value
 
 
-def _validate_min_length(name, o: Options, k, v):
-    if o.min_length is None:
-        return v
+def _validate_allowed(name, options: Options, key, value):
+    if options.allowed is None:
+        return value
 
-    min_length = o.min_length
+    allowed = options.allowed
+
+    if callable(options.allowed):
+        allowed = options.allowed()
+
+    if allowed and value not in allowed:
+        raise ValidationError(
+            f"Field `{name}#{key}`: value `{value}` is not allowed. Allowed vs: `{allowed}`"
+        )
+
+    return value
+
+
+def _validate_min_length(name, options: Options, key, value):
+    if options.min_length is None:
+        return value
+
+    min_length = options.min_length
 
     if callable(min_length):
         min_length = min_length()
 
-    if min_length is not None and len(v) < min_length:
-        raise ValidationError(f"Field `{name}#{k}`: len(`{v}`) is less than required")
+    if min_length is not None and len(value) < min_length:
+        raise ValidationError(f"Field `{name}#{key}`: len(`{value}`) is less than required")
 
-    return v
+    return value
 
 
-def _validate_max_length(name, o: Options, k, v):
-    if o.max_length is None:
-        return v
+def _validate_max_length(name, options: Options, key, value):
+    if options.max_length is None:
+        return value
 
-    max_length = o.max_length
+    max_length = options.max_length
 
     if callable(max_length):
         max_length = max_length()
 
-    if max_length is not None and len(v) > max_length:
-        raise ValidationError(f"Field `{name}#{k}`: len(`{v}`) is greater than required")
+    if max_length is not None and len(value) > max_length:
+        raise ValidationError(f"Field `{name}#{key}`: len(`{value}`) is greater than required")
 
-    return v
+    return value
 
 
-def _validate_min_value(name, o: Options, k, v):
-    if o.min_value is None:
-        return v
+def _validate_min_value(name, options: Options, key, value):
+    if options.min_value is None:
+        return value
 
-    min_value = o.min_value
+    min_value = options.min_value
 
     if callable(min_value):
         min_value = min_value()
 
-    if min_value is not None and v < min_value:
-        raise ValidationError(f"Field `{name}#{k}`: value `{v}` is less than required")
+    if min_value is not None and value < min_value:
+        raise ValidationError(f"Field `{name}#{key}`: value `{value}` is less than required")
 
-    return v
+    return value
 
 
-def _validate_max_value(name, o: Options, k, v):
-    if o.max_value is None:
-        return v
+def _validate_max_value(name, options: Options, key, value):
+    if options.max_value is None:
+        return value
 
-    max_value = o.max_value
+    max_value = options.max_value
 
     if callable(max_value):
         max_value = max_value()
 
-    if max_value is not None and v > max_value:
-        raise ValidationError(f"Field `{name}#{k}`: value `{v}` is greater than required")
+    if max_value is not None and value > max_value:
+        raise ValidationError(f"Field `{name}#{key}`: value `{value}` is greater than required")
 
-    return v
+    return value
 
 
-def _validate_size(name, o: Options, k, v):
-    if o.size is None:
-        return v
+def _validate_size(name, options: Options, key, value):
+    if options.size is None:
+        return value
 
-    size = o.size
+    size = options.size
 
     if callable(size):
         size = size()
 
-    if size is not None and size != len(v):
-        raise ValidationError(f"Field `{name}#{k}`: len(`{v}`) is not equal `{size}`")
+    if size is not None and size != len(value):
+        raise ValidationError(f"Field `{name}#{key}`: len(`{value}`) is not equal `{size}`")
 
-    return v
+    return value
 
 
-def _walk_validators(name, o: Options, k, v):
-    if o.validators is None:
-        return v
+def _walk_validators(name, options: Options, key, value):
+    if options.validators is None:
+        return value
 
-    validators = o.validators
+    validators = options.validators
 
     if validators:
         for validator in validators:
-            v = validator(name, k, v)
+            value = validator(name, key, value)
 
-    return v
+    return value
 
 
 def _replace_init(cls, strip_unknown=False):
@@ -437,9 +439,9 @@ def _replace_init(cls, strip_unknown=False):
 
         get = mapped.get
 
-        for k, o in self.__validate_it__options__.items():
-            v = get(k)
-            setattr(self, k, v)
+        for key, options in self.__validate_it__options__.items():
+            value = get(key)
+            setattr(self, key, value)
 
         if hasattr(cls, '__validate_it__post_init__'):
             self.__validate_it__post_init__()
@@ -451,18 +453,18 @@ def _replace_setattr(cls):
     origin = cls.__setattr__
 
     def __setattr__(self, key, value):
-        o = self.__validate_it__options__[key]
+        options = self.__validate_it__options__[key]
 
-        auto_pack = o.auto_pack
+        auto_pack = options.auto_pack
 
         if callable(auto_pack):
             auto_pack = auto_pack()
 
         if auto_pack:
-            pack_function = o.packer
-            value = pack_function(value, o.get_type())
+            pack_function = options.packer
+            value = pack_function(value, options.get_type())
 
-        value = validate(self.__class__.__name__, o, key, value)
+        value = validate(self.__class__.__name__, options, key, value)
 
         origin(self, key, value)
 
@@ -478,10 +480,10 @@ def _map(cls, data):
         else:
             to_check = [key, alias]
 
-        for k in to_check:
+        for key in to_check:
             try:
-                item = data[k]
-                del data[k]
+                item = data[key]
+                del data[key]
                 return item
             except KeyError:
                 continue
@@ -574,17 +576,17 @@ def _expected_name(instance, name):
 def to_dict(instance) -> dict:
     _data = {}
 
-    for k, o in instance.__validate_it__options__.items():
-        if o.required and hasattr(instance, k):
-            value = getattr(instance, k)
+    for key, options in instance.__validate_it__options__.items():
+        if options.required and hasattr(instance, key):
+            value = getattr(instance, key)
 
-            _value = unpack_value(value, o.get_type())
+            _value = unpack_value(value, options.get_type())
 
             if _value is not None:
-                if o.serializer:
-                    _value = o.serializer(_value)
+                if options.serializer:
+                    _value = options.serializer(_value)
 
-                _data[_expected_name(instance, k)] = _value
+                _data[_expected_name(instance, key)] = _value
 
     return _data
 
@@ -602,9 +604,9 @@ def clone(cls, strip_unknown=False, exclude=None, include=None, add: List[Tuple[
     if not hasattr(cls, "__validate_it__options__"):
         raise TypeError(f"Cloned class {cls} must be schema")
 
-    for k, v in cls.__dict__.items():
-        if k not in ["__validate_it__options__"] + list(cls.__validate_it__options__.keys()):
-            _dict[k] = v
+    for key, value in cls.__dict__.items():
+        if key not in ["__validate_it__options__"] + list(cls.__validate_it__options__.keys()):
+            _dict[key] = value
 
     if include:
         include = set(include)
@@ -615,14 +617,14 @@ def clone(cls, strip_unknown=False, exclude=None, include=None, add: List[Tuple[
     if exclude:
         _drop = set(exclude)
 
-    for k, o in cls.__validate_it__options__.items():
-        if k not in _drop:
-            _dict["__validate_it__options__"][k] = o
+    for key, options in cls.__validate_it__options__.items():
+        if key not in _drop:
+            _dict["__validate_it__options__"][key] = options
 
     if add:
-        for k, t, o in add:
-            o.set_type(t)
-            _dict["__validate_it__options__"][k] = o
+        for key, _type, options in add:
+            options.set_type(_type)
+            _dict["__validate_it__options__"][key] = options
 
     new_cls = type(
         f"DynamicCloneOf{cls.__name__}_{uuid.uuid4().hex}", cls.__bases__, _dict
