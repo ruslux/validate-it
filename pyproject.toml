@@ -4,13 +4,15 @@ version = "0.10.1"
 description = "Ultimate data validation tool built on top of the typing module"
 authors = ["Ruslan Roskoshny <i.am.yarger@gmail.com>"]
 license = "MIT (See LICENSE.txt)"
+readme = "README.md"
 classifiers=[
     'Development Status :: 4 - Beta',
     'License :: OSI Approved :: MIT License',
+    'Operating System :: OS Independent',
     'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
-    'Programming Language :: Python :: Pypy',
+    'Programming Language :: Python :: Implementation :: PyPy',
 ]
 
 [tool.poetry.dependencies]
@@ -24,5 +26,7 @@ accordion = "^0.2.3"
 isort = "^5.6.4"
 
 [build-system]
-requires = ["poetry>=0.12"]
+requires = [
+    "poetry>=0.12"
+]
 build-backend = "poetry.masonry.api"

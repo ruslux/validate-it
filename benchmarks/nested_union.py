@@ -1,4 +1,3 @@
-# dual core i5 7 gen
 from timeit import timeit
 from typing import Union
 
