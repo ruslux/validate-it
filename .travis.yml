@@ -11,6 +11,8 @@ install:
   - pip install poetry
   - poetry config virtualenvs.create false && poetry install
 script:
-  - tox
+  - python3.6 --version && tox -e 36
+  - python3.7 --version && tox -e 37
+  - python3.8 --version && tox -e 38
 after_success:
   - coveralls
