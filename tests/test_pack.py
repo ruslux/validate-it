@@ -2,7 +2,7 @@ from typing import Optional
 
 import pytest
 
-from validate_it import schema, Options, pack_value, ValidationError, to_dict
+from validate_it import Options, ValidationError, pack_value, schema, to_dict
 
 
 @schema

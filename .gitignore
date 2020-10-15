@@ -11,3 +11,5 @@ dist/
 docs/build/*
 !docs/build/.keep
 validate_it.egg-info
+.coverage.*
+.tox

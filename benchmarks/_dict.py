@@ -1,6 +1,6 @@
 # dual core i5 7 gen
 from timeit import timeit
-from typing import List, Dict
+from typing import Dict, List
 
 from benchmarks.config import NUMBER
 from validate_it import schema

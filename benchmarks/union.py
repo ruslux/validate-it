@@ -5,7 +5,6 @@ from typing import Union
 from benchmarks.config import NUMBER
 from validate_it import schema
 
-
 try:
     from dataclasses import dataclass
 

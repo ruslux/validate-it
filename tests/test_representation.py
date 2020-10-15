@@ -1,4 +1,4 @@
-from validate_it import Options, schema, representation
+from validate_it import Options, representation, schema
 
 
 def test_representation():

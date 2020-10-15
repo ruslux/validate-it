@@ -3,8 +3,7 @@ from timeit import timeit
 from typing import Union
 
 from benchmarks.config import NUMBER
-from validate_it import schema, Options, pack_value
-
+from validate_it import Options, pack_value, schema
 
 try:
     from dataclasses import dataclass

@@ -1,6 +1,0 @@
-pytest==3.4.0
-coverage==4.5
-pytest-cov==2.5.1
-twine
-python-box
-accordion==0.1.1

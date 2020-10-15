@@ -1,8 +1,8 @@
-from typing import Optional, List, Dict, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import pytest
 
-from validate_it import Options, schema, to_dict, ValidationError
+from validate_it import Options, ValidationError, schema, to_dict
 
 
 @schema

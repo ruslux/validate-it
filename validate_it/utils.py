@@ -1,8 +1,6 @@
 import uuid
-
-from inspect import getmembers, isroutine, isclass
-from typing import Dict, TypeVar
-from typing import Union, List, Tuple, Type, Any
+from inspect import getmembers, isclass, isroutine
+from typing import Any, Dict, List, Tuple, Type, TypeVar, Union
 
 from validate_it.errors import ValidationError
 from validate_it.options import Options

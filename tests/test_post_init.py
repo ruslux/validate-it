@@ -1,6 +1,6 @@
 import pytest
 
-from validate_it import schema, ValidationError
+from validate_it import ValidationError, schema
 
 
 @schema

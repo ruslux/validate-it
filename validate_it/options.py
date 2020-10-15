@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Union, Callable, Optional, Iterable, List
+from typing import Callable, Iterable, List, Optional, Union
 
 AnyType = Union[
     int,

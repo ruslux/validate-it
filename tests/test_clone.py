@@ -1,4 +1,4 @@
-from validate_it import schema, Options, clone, to_dict
+from validate_it import Options, clone, schema, to_dict
 
 
 @schema(strip_unknown=True)

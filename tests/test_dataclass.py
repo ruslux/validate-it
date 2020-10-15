@@ -1,8 +1,8 @@
-from typing import List, Dict, Union
+from typing import Dict, List, Union
 
 import pytest
 
-from validate_it import Options, schema, to_dict, ValidationError
+from validate_it import Options, ValidationError, schema, to_dict
 
 try:
     from dataclasses import dataclass

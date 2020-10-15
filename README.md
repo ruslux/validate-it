@@ -275,10 +275,3 @@ assert expand(to_dict(player)) == {
 
 ### <a name="requirements"/>Requirements</a>
 Tested with `python3.6`, `python3.7`, `pypy3.6-7.0.0`
-
-### <a name="contribution"/>Contribution how-to</a>
-###### Run tests:
-* clone repo: `git clone <your-fork>`
-* create and activate your virtualenv
-* `pip install -r requirements.txt && pip install -r dev-requirements`
-* `./run_tests.sh`
