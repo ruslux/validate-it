@@ -2,7 +2,11 @@ language: python
 dist: xenial
 sudo: yes
 python:
+  - "3.9"
   - "3.8"
+  - "3.7"
+  - "3.6"
+  - "pypy3.6-7.0.0"
 addons:
 install:
   - pip install poetry
