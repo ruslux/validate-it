@@ -1,4 +1,4 @@
-from unittest import TestCase
+import pytest
 
 from validate_it import schema, ValidationError
 
@@ -11,7 +11,6 @@ class A:
         raise ValidationError
 
 
-class PostInitTestCase(TestCase):
-    def test_post_init(self):
-        with self.assertRaises(ValidationError):
-            A(a=1)
+def test_post_init():
+    with pytest.raises(ValidationError):
+        A(a=1)

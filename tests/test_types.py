@@ -1,5 +1,6 @@
 from typing import Optional, List, Dict, Tuple, Union
-from unittest import TestCase
+
+import pytest
 
 from validate_it import Options, schema, to_dict, ValidationError
 
@@ -194,248 +195,258 @@ class OptionalDictWithDefaultC:
     nested_empty: Optional[Dict[int, OptionalDictWithDefaultB]] = Options()
 
 
-class TypesTestCase(TestCase):
-    def test_required(self):
-        with self.assertRaises(ValidationError):
-            Required()
+def test_required():
+    with pytest.raises(ValidationError):
+        Required()
 
-        _data = {
-            "_int": 1,
-            "_float": 1.0,
-            "_bool": True,
-            "_str": "str",
-            "_dict": dict(),
-            "_list": list()
-        }
+    _data = {
+        "_int": 1,
+        "_float": 1.0,
+        "_bool": True,
+        "_str": "str",
+        "_dict": dict(),
+        "_list": list()
+    }
 
-        assert to_dict(Required(**_data)) == _data
+    assert to_dict(Required(**_data)) == _data
 
-    def test_required_default(self):
-        _data = {
-            "_int": 1,
-            "_float": 1.0,
-            "_bool": True,
-            "_str": "x",
-            "_dict": {"x": 1},
-            "_list": [1, 2]
-        }
 
-        self.assertEqual(to_dict(RequiredDefault()), _data)
+def test_required_default():
+    _data = {
+        "_int": 1,
+        "_float": 1.0,
+        "_bool": True,
+        "_str": "x",
+        "_dict": {"x": 1},
+        "_list": [1, 2]
+    }
 
-    def test_required_default_callable(self):
-        _data = {
-            "_int": 1,
-            "_float": 1.0,
-            "_bool": True,
-            "_str": "x",
-            "_dict": {"x": 1},
-            "_list": [1, 2]
-        }
+    assert to_dict(RequiredDefault()) == _data
 
-        self.assertEqual(to_dict(RequiredDefaultCallable()), _data)
 
-    def test_not_required(self):
-        _data = {
-            "_required": 1
-        }
+def test_required_default_callable():
+    _data = {
+        "_int": 1,
+        "_float": 1.0,
+        "_bool": True,
+        "_str": "x",
+        "_dict": {"x": 1},
+        "_list": [1, 2]
+    }
 
-        self.assertEqual(to_dict(NotRequired(**_data)), _data)
+    assert to_dict(RequiredDefaultCallable()) == _data
 
-        _data = {
-            "_required": 1,
-            "_optional": 1
-        }
 
-        self.assertEqual(to_dict(NotRequired(**_data)), _data)
+def test_not_required():
+    _data = {
+        "_required": 1
+    }
 
-        _data = {}
+    assert to_dict(NotRequired(**_data)) == _data
 
-        with self.assertRaises(ValidationError):
-            to_dict(NotRequired(**_data))
+    _data = {
+        "_required": 1,
+        "_optional": 1
+    }
 
-    def test_not_required_default(self):
-        _data = {
-            "_required": 0,
-            "_optional": 0,
-            "_optional_with_options": 1
-        }
+    assert to_dict(NotRequired(**_data)) == _data
 
-        self.assertEqual(to_dict(NotRequiredDefault(**_data)), _data)
+    _data = {}
 
-    def test_not_required_default_callable(self):
-        _data = {
-            "_required": 0,
-            "_optional": 0,
-            "_optional_with_options": 1
-        }
+    with pytest.raises(ValidationError):
+        to_dict(NotRequired(**_data))
 
-        self.assertEqual(to_dict(NotRequiredDefaultCallable(**_data)), _data)
 
-    def empty(self):
-        _data = {
-            "_required": 0,
-            "_optional": None
-        }
+def test_not_required_default():
+    _data = {
+        "_required": 0,
+        "_optional": 0,
+        "_optional_with_options": 1
+    }
 
-        _expected = {
-            "_required": 0
-        }
+    assert to_dict(NotRequiredDefault(**_data)) == _data
 
-        self.assertEqual(to_dict(Empty(**_data)), _expected)
 
-    def test_allowed(self):
-        with self.assertRaises(ValidationError):
-            Allowed(a=3)
+def test_not_required_default_callable():
+    _data = {
+        "_required": 0,
+        "_optional": 0,
+        "_optional_with_options": 1
+    }
 
-        Allowed(a=1)
+    assert to_dict(NotRequiredDefaultCallable(**_data)) == _data
 
-    def test_allowed_callable(self):
-        with self.assertRaises(ValidationError):
-            AllowedCallable(a=3)
 
-        AllowedCallable(a=1)
+def empty():
+    _data = {
+        "_required": 0,
+        "_optional": None
+    }
 
-    def test_amount(self):
-        Amount(a=10, b=20)
+    _expected = {
+        "_required": 0
+    }
 
-        with self.assertRaises(ValidationError):
-            to_dict(Amount(a=9, b=20))
+    assert to_dict(Empty(**_data)) == _expected
 
-        with self.assertRaises(ValidationError):
-            to_dict(Amount(a=10, b=21))
 
-    def test_length(self):
-        Length(a="12", b="12345")
+def test_allowed():
+    with pytest.raises(ValidationError):
+        Allowed(a=3)
 
-        with self.assertRaises(ValidationError):
-            Length(a="1", b="12345")
+    Allowed(a=1)
 
-        with self.assertRaises(ValidationError):
-            Length(a="12", b="123456")
 
-    def test_convert(self):
-        self.assertEqual(to_dict(Convert(a=1)), {"a": "1"})
+def test_allowed_callable():
+    with pytest.raises(ValidationError):
+        AllowedCallable(a=3)
 
-    def test_nested_validation_and_members_access(self):
-        _data = {
-            "name": "John",
-            "items": [
-                {"title": "Rose"}
-            ],
-            "skills": {
-                "fire": {
-                    "level": 1,
-                    "multiplier": 2.0,
-                },
-                "ice": {
-                    "level": 2,
-                    "multiplier": 3.0,
-                }
+    AllowedCallable(a=1)
+
+
+def test_amount():
+    Amount(a=10, b=20)
+
+    with pytest.raises(ValidationError):
+        to_dict(Amount(a=9, b=20))
+
+    with pytest.raises(ValidationError):
+        to_dict(Amount(a=10, b=21))
+
+
+def test_length():
+    Length(a="12", b="12345")
+
+    with pytest.raises(ValidationError):
+        Length(a="1", b="12345")
+
+    with pytest.raises(ValidationError):
+        Length(a="12", b="123456")
+
+
+def test_convert():
+    assert to_dict(Convert(a=1)) == {"a": "1"}
+
+
+def test_nested_validation_and_members_access():
+    _data = {
+        "name": "John",
+        "items": [
+            {"title": "Rose"}
+        ],
+        "skills": {
+            "fire": {
+                "level": 1,
+                "multiplier": 2.0,
+            },
+            "ice": {
+                "level": 2,
+                "multiplier": 3.0,
             }
         }
+    }
 
-        p = Player(
-            name="John",
-            items=[
-                Item(title="Rose"),
-            ],
-            skills={
-                "fire": Skill(level=1, multiplier=2.0),
-                "ice": Skill(level=2, multiplier=3.0),
-            }
-        )
+    p = Player(
+        name="John",
+        items=[
+            Item(title="Rose"),
+        ],
+        skills={
+            "fire": Skill(level=1, multiplier=2.0),
+            "ice": Skill(level=2, multiplier=3.0),
+        }
+    )
 
-        self.assertEqual(to_dict(p), _data)
-        self.assertEqual(p.name, "John")
-        self.assertEqual(p.items[0].title, "Rose")
-        self.assertEqual(p.skills["ice"].level, 2)
+    assert to_dict(p) == _data
+    assert p.name == "John"
+    assert p.items[0].title == "Rose"
+    assert p.skills["ice"].level == 2
 
-    def test_not_specified(self):
-        with self.assertRaises(ValidationError):
-            NotSpecified(a={1: 1}, b={1: 1})
 
-        with self.assertRaises(ValidationError):
-            NotSpecified(a=[1, 1], b=[1, 1])
+def test_not_specified():
+    with pytest.raises(ValidationError):
+        NotSpecified(a={1: 1}, b={1: 1})
 
-        self.assertEqual(
-            to_dict(NotSpecified(a=[1, 1], b={1: 1})),
-            {
-                "a": [1, 1],
-                "b": {1: 1}
-            }
-        )
+    with pytest.raises(ValidationError):
+        NotSpecified(a=[1, 1], b=[1, 1])
 
-    def test_tuple(self):
-        TupleType(a=(1, 2), b=(1, 2, 3.0))
+    assert to_dict(NotSpecified(a=[1, 1], b={1: 1})) == {
+        "a": [1, 1],
+        "b": {1: 1}
+    }
 
-        with self.assertRaises(ValidationError):
-            TupleType(a=[1, 2, 3], b={1, 2, 3.0})
 
-        with self.assertRaises(ValidationError):
-            TupleType(a={1, 2, 3}, b={1, 2, 3})
+def test_tuple():
+    TupleType(a=(1, 2), b=(1, 2, 3.0))
 
-    def test_typevar(self):
-        data = {"a": [], "b": [1], "c": {"a": "b"}, "d": {1: 2}}
+    with pytest.raises(ValidationError):
+        TupleType(a=[1, 2, 3], b={1, 2, 3.0})
 
-        assert to_dict(TypeVarType(**data)) == data
+    with pytest.raises(ValidationError):
+        TupleType(a={1, 2, 3}, b={1, 2, 3})
 
-    def test_descriptor(self):
-        a = DescriptorType(a=[], b=[1], c={"a": "b"}, d={1: 2})
 
-        assert to_dict(a) == {"a": [], "b": [1], "c": {"a": "b"}, "d": {1: 2}}
+def test_typevar():
+    data = {"a": [], "b": [1], "c": {"a": "b"}, "d": {1: 2}}
 
-        with self.assertRaises(ValidationError):
-            a.a = {}
+    assert to_dict(TypeVarType(**data)) == data
 
-        a.a = [100]
 
-        assert a.a == [100]
+def test_descriptor():
+    a = DescriptorType(a=[], b=[1], c={"a": "b"}, d={1: 2})
 
-    def test_serializer(self):
-        a = SerializerType(a="1.1")
-        assert a.a == 1.1
-        assert to_dict(a) == {"a": 1}
+    assert to_dict(a) == {"a": [], "b": [1], "c": {"a": "b"}, "d": {1: 2}}
 
-    def test_unexpected(self):
-        a = Unexpected(a="1.1", b="1.1")
-        assert a.a == 1.1
-        assert to_dict(a) == {"a": 1}
+    with pytest.raises(ValidationError):
+        a.a = {}
 
-        with self.assertRaises(ValidationError):
-            UnexpectedNotStrip(a="1.1", b="1.1")
+    a.a = [100]
 
-    def test_union(self):
-        UnionC(c=UnionA(a=1))
-        UnionC(c=UnionB(b=0.1))
+    assert a.a == [100]
 
-        with self.assertRaises(ValidationError):
-            UnionC(c=UnionA(a=0.1))
 
-    def test_optional_dict(self):
-        b = OptionalDictB(
-            s="s",
-            nested_with_elements={1: OptionalDictA(i=2)}
-        )
+def test_serializer():
+    a = SerializerType(a="1.1")
+    assert a.a == 1.1
+    assert to_dict(a) == {"a": 1}
 
-        self.assertEqual(
-            to_dict(b),
-            {"s": "s", "nested_with_elements": {1: {"i": 2}}}
-        )
 
-    def test_optional_dict_with_default(self):
-        c = OptionalDictWithDefaultC(
-            s="s",
-            nested_with_elements={
-                1: OptionalDictWithDefaultB(nested=OptionalDictWithDefaultA(i=2))
-            }
-        )
+def test_unexpected():
+    a = Unexpected(a="1.1", b="1.1")
+    assert a.a == 1.1
+    assert to_dict(a) == {"a": 1}
 
-        self.assertEqual(c.s, "s")
+    with pytest.raises(ValidationError):
+        UnexpectedNotStrip(a="1.1", b="1.1")
 
-        self.assertEqual(
-            to_dict(c),
-            {"s": "s", "nested_with_elements": {1: {"nested": {"i": 2}}}}
-        )
 
-        c.nested_with_elements[1].nested = OptionalDictWithDefaultA(i=10)
-        to_dict(c)
+def test_union():
+    UnionC(c=UnionA(a=1))
+    UnionC(c=UnionB(b=0.1))
+
+    with pytest.raises(ValidationError):
+        UnionC(c=UnionA(a=0.1))
+
+
+def test_optional_dict():
+    b = OptionalDictB(
+        s="s",
+        nested_with_elements={1: OptionalDictA(i=2)}
+    )
+
+    assert to_dict(b) == {"s": "s", "nested_with_elements": {1: {"i": 2}}}
+
+
+def test_optional_dict_with_default():
+    c = OptionalDictWithDefaultC(
+        s="s",
+        nested_with_elements={
+            1: OptionalDictWithDefaultB(nested=OptionalDictWithDefaultA(i=2))
+        }
+    )
+
+    assert c.s == "s"
+
+    assert to_dict(c) == {"s": "s", "nested_with_elements": {1: {"nested": {"i": 2}}}}
+    c.nested_with_elements[1].nested = OptionalDictWithDefaultA(i=10)
+    to_dict(c)

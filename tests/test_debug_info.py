@@ -1,6 +1,8 @@
 from typing import List, Dict
 from unittest import TestCase
 
+import pytest
+
 from validate_it import schema, ValidationError
 
 
@@ -53,33 +55,31 @@ _data = {
 }
 
 
-class DebugInfoTestCase(TestCase):
-    def test_debug_info(self):
-
-        with self.assertRaises(ValidationError) as ve:
-            Player(
-                name="John",
-                items=[
-                    Item(title="Rose")
-                ],
-                skills={
-                    "fire": Skill(
-                        level=1,
-                        multipliers=[
-                            Multiplier(value=1.0),
-                            Multiplier(value="ang")
-                        ]
-                    ),
-                    "ice": Skill(
-                        level=2,
-                        multipliers=[
-                            Multiplier(value=1.0),
-                            Multiplier(value="ang")
-                        ]
-                    )
-                }
-            )
-
-        assert ve.exception.args == (
-            "Field `Multiplier#value`: <class 'float'> is not compatible with value `ang`:<class 'str'>",
+def test_debug_info():
+    with pytest.raises(ValidationError) as ve:
+        Player(
+            name="John",
+            items=[
+                Item(title="Rose")
+            ],
+            skills={
+                "fire": Skill(
+                    level=1,
+                    multipliers=[
+                        Multiplier(value=1.0),
+                        Multiplier(value="ang")
+                    ]
+                ),
+                "ice": Skill(
+                    level=2,
+                    multipliers=[
+                        Multiplier(value=1.0),
+                        Multiplier(value="ang")
+                    ]
+                )
+            }
         )
+
+    assert ve.value.args == (
+        "Field `Multiplier#value`: <class 'float'> is not compatible with value `ang`:<class 'str'>",
+    )

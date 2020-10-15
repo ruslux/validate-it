@@ -1,5 +1,4 @@
 from typing import Optional, List
-from unittest import TestCase
 
 from validate_it import Options, schema
 
@@ -14,9 +13,9 @@ class Example:
     f: int = Options(rename="g")
 
 
-class OptionsTestCase(TestCase):
-    def test_annotations(self):
-        assert sorted(list(Example.__annotations__.keys())) == ["b", "c", "d", "e", "f"]
+def test_annotations():
+    assert sorted(list(Example.__annotations__.keys())) == ["b", "c", "d", "e", "f"]
 
-    def test_options(self):
-        assert sorted(list(Example.__validate_it__options__.keys())) == ["a", "b", "c", "d", "e", "f"]
+
+def test_options():
+    assert sorted(list(Example.__validate_it__options__.keys())) == ["a", "b", "c", "d", "e", "f"]
