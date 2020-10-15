@@ -15,7 +15,21 @@
 - [Requirements](#requirements)
 
 ### <a name="about"/>About</a>
-Schema validator built on top of the typing module
+Schema validator built on top of the typing module.
+
+Features: 
+* validation by type hints
+* validation on `__init__`: `SomeModel(**kwargs)`
+* validation on `__setattr__`: `some_instance.some_field = value`
+* built-in options for types:
+  * `min_value`, `max_value` (based on `<` and `>`)
+  * `min_length`, `max_length`, `size` (based on `len()`)
+* cast for incoming value and outgoing value: `Options(parser=int, serializer=str)` 
+* `alias` for incoming keys and `rename` for outgoing keys: `d: int = Options(alias='dyn', rename='dynamic')`
+* validation by list `allow`ed values: `Options(allow=[1, 2, 3])`
+* validation by custom list of `validators`: `Options(validators=[is_odd, is_even])`
+* auto pack nested values: `data: List[SomeModel] = Options(auto_pack=True, packer=SomeModel)`
+* all this `options` can be callable: `Options(min_value=dynamic_min_value)`
 
 
 ### <a name="installation"/>Installation</a>
@@ -36,7 +50,7 @@ class IsNotEmailError(Exception):
     pass
 
 
-def is_email(key, value):
+def is_email(name, key, value, root):
     if not re.match(r"[^@]+@[^@]+\.[^@]+", value):
         raise IsNotEmailError(f"{key}: is not email")
 
