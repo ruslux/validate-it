@@ -15,7 +15,7 @@
 - [Requirements](#requirements)
 
 ### <a name="about"/>About</a>
-Schema validator built on top of the typing module.
+Ultimate data validation tool built on top of the typing module
 
 Features: 
 * validation by type hints

@@ -1,10 +1,13 @@
 [tool.poetry]
 name = "validate-it"
-version = "0.10.1"
+version = "0.11.2"
 description = "Ultimate data validation tool built on top of the typing module"
 authors = ["Ruslan Roskoshny <i.am.yarger@gmail.com>"]
-license = "MIT (See LICENSE.txt)"
+license = "MIT"
 readme = "README.md"
+repository = "https://github.com/ruslux/validate-it"
+homepage = "https://github.com/ruslux/validate-it"
+keywords= ["schema", "validator", "json", "typing"]
 classifiers=[
     'Development Status :: 4 - Beta',
     'License :: OSI Approved :: MIT License',
@@ -17,7 +20,6 @@ classifiers=[
 
 [tool.poetry.dependencies]
 python = "^3.6"
-pylint = "^2.6.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.1"
@@ -26,6 +28,8 @@ python-box = "^5.1.1"
 accordion = "^0.2.3"
 isort = "^5.6.4"
 tox = "^3.20.1"
+pylint = "^2.6.0"
+mypy = "^0.790"
 
 [build-system]
 requires = [
